@@ -2,8 +2,7 @@ cff-version: 1.1.0
 message: "If you use this software, please cite it as below."
 authors:
   - family-names: Finn
-    given-names: Peter D.
-    orcid: https://orcid.org/0009-0004-9497-1276
+    given-names: "Peter D."
 title: "Namespace-Bounded Agents"
-version: v1.0.1
-date-released: 2026-01-30
+version: "v1.0.4"
+date-released: "2026-01-29"
