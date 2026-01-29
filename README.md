@@ -2,6 +2,8 @@
 
 Artifacts for the paper: **"Namespace-Bounded Agents: Capability-Based Security for LLM Systems via 9P Filesystem Semantics"**
 
+[![DOI](https://zenodo.org/badge/1145282350.svg)](https://doi.org/10.5281/zenodo.18419122)
+
 ## Abstract
 
 We present a defense against prompt injection and tool misuse attacks on LLM-based agents by confining each agent to a per-process namespace derived from the Inferno operating system's 9P filesystem protocol. Unlike permission-based defenses that rely on runtime authorization decisions, our approach leverages Plan 9's capability-based model: an agent can only access resources explicitly bound into its namespace at initialization. Attackers cannot reference resources outside the namespace boundary regardless of prompt manipulation.
