@@ -209,7 +209,7 @@ If you use this work, please cite:
 ```bibtex
 @article{finn2026namespace,
   title={Namespace-Bounded Agents: Capability-Based Security for LLM Systems via 9P Filesystem Semantics},
-  author={Finn, Patrick D.},
+  author={Finn, P. D.},
   journal={arXiv preprint},
   year={2026}
 }
