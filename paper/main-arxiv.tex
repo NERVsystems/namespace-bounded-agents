@@ -7,7 +7,11 @@
 \usetikzlibrary{shapes,arrows,positioning}
 \usepackage{hyperref}
 \usepackage{booktabs}
+\usepackage{url}
+\def\UrlBreaks{\do\/\do-\do_\do.\do=\do?\do&\do\#}
+\Urlmuskip=0mu plus 1mu
 \usepackage{amsmath,amssymb}
+\usepackage[round,sort&compress]{natbib}
 
 \lstset{
   basicstyle=\ttfamily\small,
@@ -19,6 +23,7 @@
 % Customize arXiv header
 \renewcommand{\headeright}{Preprint}
 \renewcommand{\undertitle}{Preprint}
+\renewcommand{\shorttitle}{Namespace-Bounded Agents}
 
 \title{Namespace-Bounded Agents: Capability-Based Security for LLM Systems via 9P Filesystem Semantics}
 
