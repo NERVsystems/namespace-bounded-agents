@@ -1,0 +1,90 @@
+# Banking Domain Namespace Configuration
+# Used for evaluating banking-related tasks in AgentDojo
+#
+# Supports two layout modes per AgentFS specification:
+# - FLAT: Action-verb naming at root level (default, optimal for LLMs)
+# - HIERARCHICAL: Domain-based nesting (traditional REST-style)
+
+domain: banking
+description: "Banking operations including account queries and transfers"
+
+# Default layout mode (flat is AgentFS-compliant)
+default_layout: flat
+
+# =============================================================================
+# FLAT LAYOUT (AgentFS-compliant, default)
+# Action-verb naming at root level
+# =============================================================================
+
+flat:
+  paths:
+    - /list_accounts/query
+    - /get_account_balance/query
+    - /get_account_history/query
+    - /initiate_transfer/query
+    - /schedule_transfer/query
+    - /list_transfers/query
+
+  tool_mappings:
+    banking_accounts_list: /list_accounts/query
+    banking_accounts_balance: /get_account_balance/query
+    banking_accounts_history: /get_account_history/query
+    banking_transfers_initiate: /initiate_transfer/query
+    banking_transfers_schedule: /schedule_transfer/query
+    banking_transfers_list: /list_transfers/query
+
+  security_relevant:
+    - /initiate_transfer/query
+    - /schedule_transfer/query
+
+  task_namespaces:
+    account_query:
+      - /list_accounts/query
+      - /get_account_balance/query
+      - /get_account_history/query
+    full_banking:
+      - /list_accounts/query
+      - /get_account_balance/query
+      - /get_account_history/query
+      - /initiate_transfer/query
+      - /schedule_transfer/query
+      - /list_transfers/query
+
+# =============================================================================
+# HIERARCHICAL LAYOUT (Traditional)
+# Domain-based nesting for comparison experiments
+# =============================================================================
+
+hierarchical:
+  paths:
+    - /banking/accounts/list/query
+    - /banking/accounts/balance/query
+    - /banking/accounts/history/query
+    - /banking/transfers/initiate/query
+    - /banking/transfers/schedule/query
+    - /banking/transfers/list/query
+
+  tool_mappings:
+    banking_accounts_list: /banking/accounts/list/query
+    banking_accounts_balance: /banking/accounts/balance/query
+    banking_accounts_history: /banking/accounts/history/query
+    banking_transfers_initiate: /banking/transfers/initiate/query
+    banking_transfers_schedule: /banking/transfers/schedule/query
+    banking_transfers_list: /banking/transfers/list/query
+
+  security_relevant:
+    - /banking/transfers/initiate/query
+    - /banking/transfers/schedule/query
+
+  task_namespaces:
+    account_query:
+      - /banking/accounts/list/query
+      - /banking/accounts/balance/query
+      - /banking/accounts/history/query
+    full_banking:
+      - /banking/accounts/list/query
+      - /banking/accounts/balance/query
+      - /banking/accounts/history/query
+      - /banking/transfers/initiate/query
+      - /banking/transfers/schedule/query
+      - /banking/transfers/list/query

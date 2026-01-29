@@ -1,0 +1,132 @@
+# Workspace Domain Namespace Configuration
+# Used for evaluating workspace-related tasks in AgentDojo
+#
+# Supports two layout modes per AgentFS specification:
+# - FLAT: Action-verb naming at root level (default, optimal for LLMs)
+# - HIERARCHICAL: Domain-based nesting (traditional REST-style)
+
+domain: workspace
+description: "Workspace operations including email, calendar, and documents"
+
+# Default layout mode (flat is AgentFS-compliant)
+default_layout: flat
+
+# =============================================================================
+# FLAT LAYOUT (AgentFS-compliant, default)
+# Action-verb naming at root level
+# =============================================================================
+
+flat:
+  paths:
+    # Email operations
+    - /send_email/query
+    - /read_email/query
+    - /search_emails/query
+    - /list_emails/query
+    # Calendar operations
+    - /create_calendar_event/query
+    - /list_calendar_events/query
+    - /delete_calendar_event/query
+    # Document operations
+    - /read_document/query
+    - /list_documents/query
+    - /write_document/query
+
+  tool_mappings:
+    workspace_email_send: /send_email/query
+    workspace_email_read: /read_email/query
+    workspace_email_search: /search_emails/query
+    workspace_email_list: /list_emails/query
+    workspace_calendar_create: /create_calendar_event/query
+    workspace_calendar_list: /list_calendar_events/query
+    workspace_calendar_delete: /delete_calendar_event/query
+    workspace_docs_read: /read_document/query
+    workspace_docs_list: /list_documents/query
+    workspace_docs_write: /write_document/query
+
+  security_relevant:
+    - /send_email/query
+    - /write_document/query
+    - /delete_calendar_event/query
+
+  task_namespaces:
+    email_read_only:
+      - /read_email/query
+      - /search_emails/query
+      - /list_emails/query
+    email_full:
+      - /send_email/query
+      - /read_email/query
+      - /search_emails/query
+      - /list_emails/query
+    calendar_full:
+      - /create_calendar_event/query
+      - /list_calendar_events/query
+      - /delete_calendar_event/query
+    docs_read_only:
+      - /read_document/query
+      - /list_documents/query
+    docs_full:
+      - /read_document/query
+      - /list_documents/query
+      - /write_document/query
+
+# =============================================================================
+# HIERARCHICAL LAYOUT (Traditional)
+# Domain-based nesting for comparison experiments
+# =============================================================================
+
+hierarchical:
+  paths:
+    # Email operations
+    - /workspace/email/send/query
+    - /workspace/email/read/query
+    - /workspace/email/search/query
+    - /workspace/email/list/query
+    # Calendar operations
+    - /workspace/calendar/create/query
+    - /workspace/calendar/list/query
+    - /workspace/calendar/delete/query
+    # Document operations
+    - /workspace/docs/read/query
+    - /workspace/docs/list/query
+    - /workspace/docs/write/query
+
+  tool_mappings:
+    workspace_email_send: /workspace/email/send/query
+    workspace_email_read: /workspace/email/read/query
+    workspace_email_search: /workspace/email/search/query
+    workspace_email_list: /workspace/email/list/query
+    workspace_calendar_create: /workspace/calendar/create/query
+    workspace_calendar_list: /workspace/calendar/list/query
+    workspace_calendar_delete: /workspace/calendar/delete/query
+    workspace_docs_read: /workspace/docs/read/query
+    workspace_docs_list: /workspace/docs/list/query
+    workspace_docs_write: /workspace/docs/write/query
+
+  security_relevant:
+    - /workspace/email/send/query
+    - /workspace/docs/write/query
+    - /workspace/calendar/delete/query
+
+  task_namespaces:
+    email_read_only:
+      - /workspace/email/read/query
+      - /workspace/email/search/query
+      - /workspace/email/list/query
+    email_full:
+      - /workspace/email/send/query
+      - /workspace/email/read/query
+      - /workspace/email/search/query
+      - /workspace/email/list/query
+    calendar_full:
+      - /workspace/calendar/create/query
+      - /workspace/calendar/list/query
+      - /workspace/calendar/delete/query
+    docs_read_only:
+      - /workspace/docs/read/query
+      - /workspace/docs/list/query
+    docs_full:
+      - /workspace/docs/read/query
+      - /workspace/docs/list/query
+      - /workspace/docs/write/query

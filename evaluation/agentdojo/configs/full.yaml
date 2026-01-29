@@ -1,0 +1,186 @@
+# Full Namespace Configuration
+# Used for utility baseline comparison (equivalent to MCP with all tools)
+#
+# Supports two layout modes per AgentFS specification:
+# - FLAT: Action-verb naming at root level (default, optimal for LLMs)
+# - HIERARCHICAL: Domain-based nesting (traditional REST-style)
+
+domain: full
+description: "Full namespace with all domains - used for utility baseline"
+
+# Default layout mode (flat is AgentFS-compliant)
+default_layout: flat
+
+# Include all domain configs
+includes:
+  - banking.yaml
+  - workspace.yaml
+  - travel.yaml
+  - slack.yaml
+
+# =============================================================================
+# FLAT LAYOUT (AgentFS-compliant, default)
+# All 33 tools at root level with action-verb naming
+# =============================================================================
+
+flat:
+  paths:
+    # Banking (6 tools)
+    - /list_accounts/query
+    - /get_account_balance/query
+    - /get_account_history/query
+    - /initiate_transfer/query
+    - /schedule_transfer/query
+    - /list_transfers/query
+    # Workspace - Email (4 tools)
+    - /send_email/query
+    - /read_email/query
+    - /search_emails/query
+    - /list_emails/query
+    # Workspace - Calendar (3 tools)
+    - /create_calendar_event/query
+    - /list_calendar_events/query
+    - /delete_calendar_event/query
+    # Workspace - Docs (3 tools)
+    - /read_document/query
+    - /list_documents/query
+    - /write_document/query
+    # Travel - Flights (3 tools)
+    - /search_flights/query
+    - /book_flight/query
+    - /cancel_flight/query
+    # Travel - Hotels (3 tools)
+    - /search_hotels/query
+    - /book_hotel/query
+    - /cancel_hotel/query
+    # Travel - Bookings (2 tools)
+    - /list_bookings/query
+    - /view_travel_profile/query
+    # Slack - Messages (3 tools)
+    - /send_slack_message/query
+    - /read_slack_messages/query
+    - /search_slack_messages/query
+    # Slack - Channels (4 tools)
+    - /list_slack_channels/query
+    - /create_slack_channel/query
+    - /join_slack_channel/query
+    - /get_slack_channel_info/query
+    # Slack - Users (2 tools)
+    - /list_slack_users/query
+    - /lookup_slack_user/query
+
+  security_relevant:
+    # Banking
+    - /initiate_transfer/query
+    - /schedule_transfer/query
+    # Workspace
+    - /send_email/query
+    - /write_document/query
+    - /delete_calendar_event/query
+    # Travel
+    - /view_travel_profile/query
+    - /book_flight/query
+    - /book_hotel/query
+    - /cancel_flight/query
+    - /cancel_hotel/query
+    # Slack
+    - /send_slack_message/query
+    - /create_slack_channel/query
+    - /join_slack_channel/query
+
+# =============================================================================
+# HIERARCHICAL LAYOUT (Traditional)
+# Domain-based nesting for comparison experiments
+# =============================================================================
+
+hierarchical:
+  paths:
+    # Banking
+    - /banking/accounts/list/query
+    - /banking/accounts/balance/query
+    - /banking/accounts/history/query
+    - /banking/transfers/initiate/query
+    - /banking/transfers/schedule/query
+    - /banking/transfers/list/query
+    # Workspace - Email
+    - /workspace/email/send/query
+    - /workspace/email/read/query
+    - /workspace/email/search/query
+    - /workspace/email/list/query
+    # Workspace - Calendar
+    - /workspace/calendar/create/query
+    - /workspace/calendar/list/query
+    - /workspace/calendar/delete/query
+    # Workspace - Docs
+    - /workspace/docs/read/query
+    - /workspace/docs/list/query
+    - /workspace/docs/write/query
+    # Travel - Flights
+    - /travel/flights/search/query
+    - /travel/flights/book/query
+    - /travel/flights/cancel/query
+    # Travel - Hotels
+    - /travel/hotels/search/query
+    - /travel/hotels/book/query
+    - /travel/hotels/cancel/query
+    # Travel - Bookings
+    - /travel/bookings/list/query
+    - /travel/profile/view/query
+    # Slack - Messages
+    - /slack/messages/send/query
+    - /slack/messages/read/query
+    - /slack/messages/search/query
+    # Slack - Channels
+    - /slack/channels/list/query
+    - /slack/channels/create/query
+    - /slack/channels/join/query
+    - /slack/channels/info/query
+    # Slack - Users
+    - /slack/users/list/query
+    - /slack/users/lookup/query
+
+  security_relevant:
+    # Banking
+    - /banking/transfers/initiate/query
+    - /banking/transfers/schedule/query
+    # Workspace
+    - /workspace/email/send/query
+    - /workspace/docs/write/query
+    - /workspace/calendar/delete/query
+    # Travel
+    - /travel/profile/view/query
+    - /travel/flights/book/query
+    - /travel/hotels/book/query
+    - /travel/flights/cancel/query
+    - /travel/hotels/cancel/query
+    # Slack
+    - /slack/messages/send/query
+    - /slack/channels/create/query
+    - /slack/channels/join/query
+
+# =============================================================================
+# Evaluation modes
+# =============================================================================
+
+evaluation:
+  # Security mode: minimal namespace per task
+  security_mode:
+    description: "Construct minimal namespace based on required tools"
+    method: "MinimalNamespace(task.required_tools, layout)"
+
+  # Utility mode: full namespace (fair comparison to MCP baseline)
+  utility_mode:
+    description: "Full namespace matching MCP baseline"
+    method: "FullNamespace(layout)"
+
+  # Layout comparison
+  layout_comparison:
+    description: "Compare flat vs hierarchical layouts"
+    layouts:
+      - flat
+      - hierarchical
+    metrics:
+      - benign_utility
+      - utility_under_attack
+      - attack_success_rate
+      - structural_blocks_percentage

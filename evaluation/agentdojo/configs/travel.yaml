@@ -1,0 +1,122 @@
+# Travel Domain Namespace Configuration
+# Used for evaluating travel-related tasks in AgentDojo
+#
+# Supports two layout modes per AgentFS specification:
+# - FLAT: Action-verb naming at root level (default, optimal for LLMs)
+# - HIERARCHICAL: Domain-based nesting (traditional REST-style)
+
+domain: travel
+description: "Travel operations including flights, hotels, and bookings"
+
+# Default layout mode (flat is AgentFS-compliant)
+default_layout: flat
+
+# =============================================================================
+# FLAT LAYOUT (AgentFS-compliant, default)
+# Action-verb naming at root level
+# =============================================================================
+
+flat:
+  paths:
+    # Flight operations
+    - /search_flights/query
+    - /book_flight/query
+    - /cancel_flight/query
+    # Hotel operations
+    - /search_hotels/query
+    - /book_hotel/query
+    - /cancel_hotel/query
+    # Booking management
+    - /list_bookings/query
+    # Profile (contains sensitive data)
+    - /view_travel_profile/query
+
+  tool_mappings:
+    travel_flights_search: /search_flights/query
+    travel_flights_book: /book_flight/query
+    travel_flights_cancel: /cancel_flight/query
+    travel_hotels_search: /search_hotels/query
+    travel_hotels_book: /book_hotel/query
+    travel_hotels_cancel: /cancel_hotel/query
+    travel_bookings_list: /list_bookings/query
+    travel_profile_view: /view_travel_profile/query
+
+  security_relevant:
+    - /view_travel_profile/query
+    - /book_flight/query
+    - /book_hotel/query
+    - /cancel_flight/query
+    - /cancel_hotel/query
+
+  task_namespaces:
+    search_only:
+      - /search_flights/query
+      - /search_hotels/query
+    flights_full:
+      - /search_flights/query
+      - /book_flight/query
+      - /cancel_flight/query
+      - /list_bookings/query
+    hotels_full:
+      - /search_hotels/query
+      - /book_hotel/query
+      - /cancel_hotel/query
+      - /list_bookings/query
+    profile_access:
+      - /view_travel_profile/query
+      - /list_bookings/query
+
+# =============================================================================
+# HIERARCHICAL LAYOUT (Traditional)
+# Domain-based nesting for comparison experiments
+# =============================================================================
+
+hierarchical:
+  paths:
+    # Flight operations
+    - /travel/flights/search/query
+    - /travel/flights/book/query
+    - /travel/flights/cancel/query
+    # Hotel operations
+    - /travel/hotels/search/query
+    - /travel/hotels/book/query
+    - /travel/hotels/cancel/query
+    # Booking management
+    - /travel/bookings/list/query
+    # Profile (contains sensitive data)
+    - /travel/profile/view/query
+
+  tool_mappings:
+    travel_flights_search: /travel/flights/search/query
+    travel_flights_book: /travel/flights/book/query
+    travel_flights_cancel: /travel/flights/cancel/query
+    travel_hotels_search: /travel/hotels/search/query
+    travel_hotels_book: /travel/hotels/book/query
+    travel_hotels_cancel: /travel/hotels/cancel/query
+    travel_bookings_list: /travel/bookings/list/query
+    travel_profile_view: /travel/profile/view/query
+
+  security_relevant:
+    - /travel/profile/view/query
+    - /travel/flights/book/query
+    - /travel/hotels/book/query
+    - /travel/flights/cancel/query
+    - /travel/hotels/cancel/query
+
+  task_namespaces:
+    search_only:
+      - /travel/flights/search/query
+      - /travel/hotels/search/query
+    flights_full:
+      - /travel/flights/search/query
+      - /travel/flights/book/query
+      - /travel/flights/cancel/query
+      - /travel/bookings/list/query
+    hotels_full:
+      - /travel/hotels/search/query
+      - /travel/hotels/book/query
+      - /travel/hotels/cancel/query
+      - /travel/bookings/list/query
+    profile_access:
+      - /travel/profile/view/query
+      - /travel/bookings/list/query

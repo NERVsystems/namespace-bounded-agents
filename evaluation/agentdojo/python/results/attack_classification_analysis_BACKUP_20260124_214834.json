@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-01-24T21:16:30.972800",
+  "analysis_type": "attack_classification",
+  "description": "Classification of AgentDojo injection attacks by structural blockability",
+  "total_attacks": 629,
+  "cross_tool_attacks": 473,
+  "same_tool_attacks": 156,
+  "cross_tool_pct": 75.19872813990462,
+  "same_tool_pct": 24.80127186009539,
+  "domain_breakdown": {
+    "banking": {
+      "total_attacks": 144,
+      "cross_tool": 73,
+      "same_tool": 71,
+      "cross_tool_pct": 50.69444444444444
+    },
+    "workspace": {
+      "total_attacks": 240,
+      "cross_tool": 204,
+      "same_tool": 36,
+      "cross_tool_pct": 85.0
+    },
+    "travel": {
+      "total_attacks": 140,
+      "cross_tool": 110,
+      "same_tool": 30,
+      "cross_tool_pct": 78.57142857142857
+    },
+    "slack": {
+      "total_attacks": 105,
+      "cross_tool": 86,
+      "same_tool": 19,
+      "cross_tool_pct": 81.9047619047619
+    }
+  },
+  "structural_blocking_examples": [
+    {
+      "domain": "banking",
+      "user_task": "user_task_0",
+      "injection": "injection_task_1",
+      "namespace_tools": [
+        "send_money",
+        "read_file"
+      ],
+      "blocked_paths": [
+        "/get_iban/query"
+      ]
+    },
+    {
+      "domain": "workspace",
+      "user_task": "user_task_0",
+      "injection": "injection_task_1",
+      "namespace_tools": [
+        "send_email"
+      ],
+      "blocked_paths": [
+        "/delete_file/query"
+      ]
+    },
+    {
+      "domain": "travel",
+      "user_task": "user_task_0",
+      "injection": "injection_task_1",
+      "namespace_tools": [
+        "reserve_hotel"
+      ],
+      "blocked_paths": [
+        "/send_email/query"
+      ]
+    },
+    {
+      "domain": "slack",
+      "user_task": "user_task_0",
+      "injection": "injection_task_2",
+      "namespace_tools": [
+        "get_webpage"
+      ],
+      "blocked_paths": [
+        "/get_channels/query",
+        "/send_direct_message/query",
+        "/post_webpage/query"
+      ]
+    }
+  ]
+}

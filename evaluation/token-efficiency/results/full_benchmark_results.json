@@ -1,0 +1,479 @@
+{
+  "test_date": "2026-01-06T14:47:30.563755",
+  "model": "claude-sonnet-4-20250514",
+  "tokenizer": "tiktoken cl100k_base",
+  "tool_schema_tokens": 1430,
+  "summary": {
+    "type_a": {
+      "tools": 3,
+      "success": 3,
+      "total_tokens": 18274,
+      "total_calls": 6,
+      "avg_tokens_per_tool": 6091.333333333333
+    },
+    "type_b": {
+      "tools": 11,
+      "success": 11,
+      "total_tokens": 67593,
+      "total_calls": 22,
+      "avg_tokens_per_tool": 6144.818181818182
+    },
+    "total": {
+      "tools": 14,
+      "success": 14,
+      "total_tokens": 85867,
+      "total_calls": 28,
+      "avg_tokens_per_tool": 6133.357142857143
+    }
+  },
+  "results": [
+    {
+      "tool_name": "geocode",
+      "tool_type": "A",
+      "task": "Find the coordinates of the Eiffel Tower in Paris",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3080,
+      "response_tokens": 119,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6059,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1453,
+          "response_tokens_tiktoken": 40,
+          "prompt_tokens_api": 1893,
+          "response_tokens_api": 78,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1627,
+          "response_tokens_tiktoken": 79,
+          "prompt_tokens_api": 2017,
+          "response_tokens_api": 74,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "reverse",
+      "tool_type": "A",
+      "task": "What is the address at coordinates 48.8582, 2.2945?",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3115,
+      "response_tokens": 114,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6089,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1460,
+          "response_tokens_tiktoken": 53,
+          "prompt_tokens_api": 1899,
+          "response_tokens_api": 106,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1655,
+          "response_tokens_tiktoken": 61,
+          "prompt_tokens_api": 2055,
+          "response_tokens_api": 56,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "polyline_decode",
+      "tool_type": "A",
+      "task": "Decode this polyline: _p~iF~ps|U_ulLnnqC_mqNvxq`@",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3115,
+      "response_tokens": 151,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6126,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1467,
+          "response_tokens_tiktoken": 33,
+          "prompt_tokens_api": 1910,
+          "response_tokens_api": 88,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1648,
+          "response_tokens_tiktoken": 118,
+          "prompt_tokens_api": 2047,
+          "response_tokens_api": 115,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "nearby",
+      "tool_type": "B",
+      "task": "Find restaurants within 500 meters of 48.8582, 2.2945",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3130,
+      "response_tokens": 159,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6149,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1460,
+          "response_tokens_tiktoken": 51,
+          "prompt_tokens_api": 1900,
+          "response_tokens_api": 142,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1670,
+          "response_tokens_tiktoken": 108,
+          "prompt_tokens_api": 2085,
+          "response_tokens_api": 102,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "distance",
+      "tool_type": "B",
+      "task": "Calculate the distance from 48.8582,2.2945 to 48.8606,2.3376",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3115,
+      "response_tokens": 131,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6106,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1467,
+          "response_tokens_tiktoken": 36,
+          "prompt_tokens_api": 1907,
+          "response_tokens_api": 133,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1648,
+          "response_tokens_tiktoken": 95,
+          "prompt_tokens_api": 2070,
+          "response_tokens_api": 90,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "route",
+      "tool_type": "B",
+      "task": "Get driving route from 48.8582,2.2945 to 48.8606,2.3376",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3125,
+      "response_tokens": 169,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6154,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1467,
+          "response_tokens_tiktoken": 37,
+          "prompt_tokens_api": 1907,
+          "response_tokens_api": 155,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1658,
+          "response_tokens_tiktoken": 132,
+          "prompt_tokens_api": 2100,
+          "response_tokens_api": 127,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "meeting_point",
+      "tool_type": "B",
+      "task": "Find a cafe meeting point between 48.8582,2.2945 and 48.8606,2.3376",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3155,
+      "response_tokens": 209,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6224,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1469,
+          "response_tokens_tiktoken": 55,
+          "prompt_tokens_api": 1909,
+          "response_tokens_api": 173,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1686,
+          "response_tokens_tiktoken": 154,
+          "prompt_tokens_api": 2121,
+          "response_tokens_api": 144,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "parking",
+      "tool_type": "B",
+      "task": "Find parking within 1000 meters of 48.8582, 2.2945",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3094,
+      "response_tokens": 136,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6090,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1461,
+          "response_tokens_tiktoken": 40,
+          "prompt_tokens_api": 1901,
+          "response_tokens_api": 112,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1633,
+          "response_tokens_tiktoken": 96,
+          "prompt_tokens_api": 2047,
+          "response_tokens_api": 91,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "charging",
+      "tool_type": "B",
+      "task": "Find EV charging stations within 2000 meters of 48.8582, 2.2945",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3120,
+      "response_tokens": 187,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6167,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1463,
+          "response_tokens_tiktoken": 61,
+          "prompt_tokens_api": 1904,
+          "response_tokens_api": 136,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1657,
+          "response_tokens_tiktoken": 126,
+          "prompt_tokens_api": 2073,
+          "response_tokens_api": 121,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "schools",
+      "tool_type": "B",
+      "task": "Find schools within 1500 meters of 48.8582, 2.2945",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3109,
+      "response_tokens": 149,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6118,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1461,
+          "response_tokens_tiktoken": 50,
+          "prompt_tokens_api": 1901,
+          "response_tokens_api": 122,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1648,
+          "response_tokens_tiktoken": 99,
+          "prompt_tokens_api": 2057,
+          "response_tokens_api": 90,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "explore",
+      "tool_type": "B",
+      "task": "Explore the area within 500 meters of 48.8582, 2.2945",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3110,
+      "response_tokens": 229,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6199,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1461,
+          "response_tokens_tiktoken": 50,
+          "prompt_tokens_api": 1902,
+          "response_tokens_api": 121,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1649,
+          "response_tokens_tiktoken": 179,
+          "prompt_tokens_api": 2057,
+          "response_tokens_api": 177,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "bbox",
+      "tool_type": "B",
+      "task": "Create a bounding box from points: (48.85,2.29), (48.86,2.34), (48.87,2.30)",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3165,
+      "response_tokens": 154,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6179,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1476,
+          "response_tokens_tiktoken": 37,
+          "prompt_tokens_api": 1916,
+          "response_tokens_api": 126,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1689,
+          "response_tokens_tiktoken": 117,
+          "prompt_tokens_api": 2090,
+          "response_tokens_api": 111,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "centroid",
+      "tool_type": "B",
+      "task": "Calculate centroid of points: (48.85,2.29), (48.86,2.34), (48.87,2.30)",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3141,
+      "response_tokens": 123,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6124,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1474,
+          "response_tokens_tiktoken": 36,
+          "prompt_tokens_api": 1914,
+          "response_tokens_api": 124,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1667,
+          "response_tokens_tiktoken": 87,
+          "prompt_tokens_api": 2063,
+          "response_tokens_api": 78,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "tool_name": "polyline_encode",
+      "tool_type": "B",
+      "task": "Encode these points into a polyline: (48.85,2.29), (48.86,2.34)",
+      "success": true,
+      "api_calls": 2,
+      "iterations": 2,
+      "prompt_tokens": 3110,
+      "response_tokens": 113,
+      "tool_schema_tokens": 1430,
+      "total_tokens": 6083,
+      "errors": [],
+      "retries": 0,
+      "transcript": [
+        {
+          "iteration": 1,
+          "prompt_tokens_tiktoken": 1467,
+          "response_tokens_tiktoken": 37,
+          "prompt_tokens_api": 1908,
+          "response_tokens_api": 107,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "prompt_tokens_tiktoken": 1643,
+          "response_tokens_tiktoken": 76,
+          "prompt_tokens_api": 2031,
+          "response_tokens_api": 68,
+          "stop_reason": "end_turn"
+        }
+      ]
+    }
+  ]
+}

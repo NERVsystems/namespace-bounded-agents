@@ -1,0 +1,120 @@
+# Slack Domain Namespace Configuration
+# Used for evaluating Slack-related tasks in AgentDojo
+#
+# Supports two layout modes per AgentFS specification:
+# - FLAT: Action-verb naming at root level (default, optimal for LLMs)
+# - HIERARCHICAL: Domain-based nesting (traditional REST-style)
+
+domain: slack
+description: "Slack operations including messages, channels, and users"
+
+# Default layout mode (flat is AgentFS-compliant)
+default_layout: flat
+
+# =============================================================================
+# FLAT LAYOUT (AgentFS-compliant, default)
+# Action-verb naming at root level
+# =============================================================================
+
+flat:
+  paths:
+    # Message operations
+    - /send_slack_message/query
+    - /read_slack_messages/query
+    - /search_slack_messages/query
+    # Channel operations
+    - /list_slack_channels/query
+    - /create_slack_channel/query
+    - /join_slack_channel/query
+    - /get_slack_channel_info/query
+    # User operations
+    - /list_slack_users/query
+    - /lookup_slack_user/query
+
+  tool_mappings:
+    slack_messages_send: /send_slack_message/query
+    slack_messages_read: /read_slack_messages/query
+    slack_messages_search: /search_slack_messages/query
+    slack_channels_list: /list_slack_channels/query
+    slack_channels_create: /create_slack_channel/query
+    slack_channels_join: /join_slack_channel/query
+    slack_channels_info: /get_slack_channel_info/query
+    slack_users_list: /list_slack_users/query
+    slack_users_lookup: /lookup_slack_user/query
+
+  security_relevant:
+    - /send_slack_message/query
+    - /create_slack_channel/query
+    - /join_slack_channel/query
+
+  task_namespaces:
+    messages_read_only:
+      - /read_slack_messages/query
+      - /search_slack_messages/query
+      - /list_slack_channels/query
+    messages_full:
+      - /send_slack_message/query
+      - /read_slack_messages/query
+      - /search_slack_messages/query
+    channels_full:
+      - /list_slack_channels/query
+      - /create_slack_channel/query
+      - /join_slack_channel/query
+      - /get_slack_channel_info/query
+    users_only:
+      - /list_slack_users/query
+      - /lookup_slack_user/query
+
+# =============================================================================
+# HIERARCHICAL LAYOUT (Traditional)
+# Domain-based nesting for comparison experiments
+# =============================================================================
+
+hierarchical:
+  paths:
+    # Message operations
+    - /slack/messages/send/query
+    - /slack/messages/read/query
+    - /slack/messages/search/query
+    # Channel operations
+    - /slack/channels/list/query
+    - /slack/channels/create/query
+    - /slack/channels/join/query
+    - /slack/channels/info/query
+    # User operations
+    - /slack/users/list/query
+    - /slack/users/lookup/query
+
+  tool_mappings:
+    slack_messages_send: /slack/messages/send/query
+    slack_messages_read: /slack/messages/read/query
+    slack_messages_search: /slack/messages/search/query
+    slack_channels_list: /slack/channels/list/query
+    slack_channels_create: /slack/channels/create/query
+    slack_channels_join: /slack/channels/join/query
+    slack_channels_info: /slack/channels/info/query
+    slack_users_list: /slack/users/list/query
+    slack_users_lookup: /slack/users/lookup/query
+
+  security_relevant:
+    - /slack/messages/send/query
+    - /slack/channels/create/query
+    - /slack/channels/join/query
+
+  task_namespaces:
+    messages_read_only:
+      - /slack/messages/read/query
+      - /slack/messages/search/query
+      - /slack/channels/list/query
+    messages_full:
+      - /slack/messages/send/query
+      - /slack/messages/read/query
+      - /slack/messages/search/query
+    channels_full:
+      - /slack/channels/list/query
+      - /slack/channels/create/query
+      - /slack/channels/join/query
+      - /slack/channels/info/query
+    users_only:
+      - /slack/users/list/query
+      - /slack/users/lookup/query

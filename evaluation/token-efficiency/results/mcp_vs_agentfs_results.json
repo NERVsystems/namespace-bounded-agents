@@ -1,0 +1,116 @@
+{
+  "test_date": "2026-01-06",
+  "model": "claude-sonnet-4-20250514",
+  "tokenizer": "tiktoken cl100k_base",
+  "mcp_results": [
+    {
+      "task": "Find the coordinates of the Eiffel Tower in Paris",
+      "success": true,
+      "api_calls": 2,
+      "input_tokens": 2465,
+      "output_tokens": 146,
+      "total_tokens": 2611,
+      "tool_schema_tokens": 764,
+      "iterations": 2,
+      "transcript": [
+        {
+          "iteration": 1,
+          "input_tokens": 1162,
+          "output_tokens": 80,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "input_tokens": 1303,
+          "output_tokens": 66,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "task": "Find restaurants near coordinates 48.8582, 2.2945",
+      "success": true,
+      "api_calls": 2,
+      "input_tokens": 2577,
+      "output_tokens": 357,
+      "total_tokens": 2934,
+      "tool_schema_tokens": 764,
+      "iterations": 2,
+      "transcript": [
+        {
+          "iteration": 1,
+          "input_tokens": 1165,
+          "output_tokens": 162,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "input_tokens": 1412,
+          "output_tokens": 195,
+          "stop_reason": "end_turn"
+        }
+      ]
+    },
+    {
+      "task": "Find restaurants within 500 meters of the Eiffel Tower",
+      "success": true,
+      "api_calls": 3,
+      "input_tokens": 4036,
+      "output_tokens": 424,
+      "total_tokens": 4460,
+      "tool_schema_tokens": 764,
+      "iterations": 3,
+      "transcript": [
+        {
+          "iteration": 1,
+          "input_tokens": 1164,
+          "output_tokens": 102,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 2,
+          "input_tokens": 1327,
+          "output_tokens": 133,
+          "stop_reason": "tool_use"
+        },
+        {
+          "iteration": 3,
+          "input_tokens": 1545,
+          "output_tokens": 189,
+          "stop_reason": "end_turn"
+        }
+      ]
+    }
+  ],
+  "agentfs_results": [
+    {
+      "task": "Find the coordinates of the Eiffel Tower in Paris",
+      "total_tokens": 316,
+      "api_calls": 1,
+      "success": true,
+      "iterations": 1
+    },
+    {
+      "task": "Find restaurants near coordinates 48.8582, 2.2945",
+      "total_tokens": 1160,
+      "api_calls": 3,
+      "success": true,
+      "iterations": 3
+    },
+    {
+      "task": "Find restaurants within 500 meters of the Eiffel Tower",
+      "total_tokens": 384,
+      "api_calls": 1,
+      "success": false,
+      "iterations": 1
+    }
+  ],
+  "comparison": {
+    "mcp_total_tokens": 10005,
+    "agentfs_total_tokens": 1860,
+    "token_savings": 8145,
+    "savings_percentage": 81.40929535232384,
+    "mcp_total_calls": 7,
+    "agentfs_total_calls": 5
+  }
+}

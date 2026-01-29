@@ -1,0 +1,79 @@
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/prototype/bin/
+/evaluation/*/bin/
+
+# Go build cache
+*.test
+*.out
+go.sum
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# SPIN generated files (keep .pml source)
+pan
+pan.c
+pan.h
+pan.b
+pan.m
+pan.t
+_spin_nvr.tmp
+
+# CBMC generated files
+*.smt2
+*.goto
+
+# LaTeX auxiliary files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.vrb
+
+# Keep compiled PDF for distribution
+!paper/*.pdf

@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper as below."
+title: "Namespace-Bounded Agents: Capability-Based Security for LLM Systems via 9P Filesystem Semantics"
+type: software
+authors:
+  - family-names: Finn
+    given-names: Patrick D.
+    orcid: https://orcid.org/0009-0004-9497-1276
+    affiliation: NERV Systems
+repository-code: "https://github.com/NERVsystems/namespace-bounded-agents"
+abstract: >-
+  Artifacts for the paper demonstrating that LLM agents operating within
+  per-process 9P namespaces achieve 0% attack success rate against 629 prompt
+  injection attacks while reducing context token consumption by 83.5%.
+keywords:
+  - large language models
+  - agent security
+  - namespace isolation
+  - 9P protocol
+  - capability-based security
+  - prompt injection
+license: MIT
+version: "1.0.0"
+date-released: "2026-01-30"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Finn
+      given-names: Patrick D.
+      orcid: https://orcid.org/0009-0004-9497-1276
+  title: "Namespace-Bounded Agents: Capability-Based Security for LLM Systems via 9P Filesystem Semantics"
+  year: 2026
+  journal: "arXiv preprint"
