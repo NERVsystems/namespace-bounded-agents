@@ -1,8 +1,8 @@
 # Namespace-Bounded Agents
 
-Artifacts for the paper: **"Namespace-Bounded Agents: Capability-Based Security for LLM Systems via 9P Filesystem Semantics"**
-
 [![DOI](https://zenodo.org/badge/1145282350.svg)](https://doi.org/10.5281/zenodo.18419122)
+
+Artifacts for the paper: **"Namespace-Bounded Agents: Capability-Based Security for LLM Systems via 9P Filesystem Semantics"**
 
 ## Abstract
 
