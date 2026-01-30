@@ -230,8 +230,7 @@ We consider a threat model where an adversary seeks to manipulate an LLM agent i
     \draw[redarrow] (attacker2) -- node[left, font=\scriptsize] {poison} (extdata2);
     \draw[arrow] (extdata2) -- node[above, font=\scriptsize] {inject} (agent2);
     \draw[arrow] (agent2) -- (ns);
-    \draw[blockarrow] (ns) -- node[right, font=\scriptsize, text=green!60!black] {BLOCKED} (unauth2);
-    \node[font=\scriptsize, text=green!60!black] at (8,-1.2) {(path does not exist)};
+    \draw[blockarrow] (ns) -- node[right, font=\scriptsize, text=green!60!black, align=left] {BLOCKED\\{\tiny(path does not exist)}} (unauth2);
 
 \end{tikzpicture}
 \caption{Threat model comparison. \textbf{Left}: MCP exposes all tools via JSON schema; attack success depends on model refusing malicious instructions. \textbf{Right}: 9P namespace contains only mounted paths; unauthorized tools do not exist regardless of model behavior. \textit{Key insight}: MCP attack success depends on model behavior; 9P attack fails structurally regardless of model.}
