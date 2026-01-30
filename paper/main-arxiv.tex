@@ -387,7 +387,7 @@ This has a practical implication: rather than defining a tool protocol with JSON
     \node[font=\small\bfseries] at (-4.5,3.5) {MCP: Schema-Mediated};
 
     \node[box] (llm1) at (-4.5,2.5) {LLM};
-    \node[schemabox] (schema) at (-4.5,1) {JSON Schema\\(all 5 tools visible)\\1,430 tokens/request};
+    \node[schemabox] (schema) at (-4.5,1) {JSON Schema\\(all 14 tools visible)\\1,430 tokens/request};
     \node[box] (dispatch1) at (-4.5,-0.5) {Tool Dispatcher};
     \node[box, minimum width=1cm] (t1) at (-6,-1.8) {geocode};
     \node[box, minimum width=1cm] (t2) at (-4.5,-1.8) {reverse};
@@ -408,7 +408,7 @@ This has a practical implication: rather than defining a tool protocol with JSON
     \node[font=\small\bfseries] at (4.5,3.5) {9P: Namespace-Bounded};
 
     \node[box] (llm2) at (4.5,2.5) {LLM};
-    \node[nsbox] (ns) at (4.5,1) {Namespace\\(only /geocode mounted)\\$\sim$50 tokens};
+    \node[nsbox] (ns) at (4.5,1) {Namespace\\(14 tools)\\248 tokens};
     \node[box] (kernel) at (4.5,-0.5) {9P / Kernel};
     \node[box, minimum width=1cm, fill=green!20] (t4) at (4.5,-1.8) {geocode};
     \node[box, minimum width=1cm, fill=red!10, draw=red, dashed] (t5) at (6.5,-1.8) {reverse};
@@ -421,9 +421,7 @@ This has a practical implication: rather than defining a tool protocol with JSON
     \node[note, text width=3cm, align=center] at (4.5,-2.8) {Attack: injection fails\\(path does not exist)};
 
 \end{tikzpicture}
-\caption{Invocation flow comparison. \textbf{Left}: MCP exposes full tool schema (1,430 tokens per request);
-dispatcher routes based on model output. \textbf{Right}: 9P namespace contains only
-task-required tools ($\sim$50 tokens); kernel rejects paths outside namespace with ENOENT. \textit{Key insight}: MCP requires full schema in every request; 9P namespace listing is minimal.}
+\caption{Invocation flow comparison. \textbf{Left}: MCP exposes full tool schema (1,430 tokens for 14 tools); dispatcher routes based on model output. \textbf{Right}: 9P namespace listing (248 tokens for 14 tools); kernel rejects paths outside namespace with ENOENT. For identical 14-tool sets, filesystem semantics achieve 83\% token reduction (1,430 $\rightarrow$ 248). Additionally, namespaces can be scoped per-task to include only required tools, further reducing tokens and attack surface.}
 \label{fig:invocation-comparison}
 \end{figure*}
 
@@ -1085,7 +1083,7 @@ The attack surface transforms from model-dependent to implementation-verifiable:
 
 \subsubsection{Methodology}
 
-We conducted a 14-tool benchmark comparing MCP and 9P filesystem approaches on identical geospatial tasks. MCP sends full JSON schemas (1,430 tokens) with every API call. The 9P approach sends a namespace listing ($\sim$280 tokens) once, then shell commands costing 30-70 output tokens each.
+We conducted a 14-tool benchmark comparing MCP and 9P filesystem approaches on identical geospatial tasks. MCP sends full JSON schemas (1,430 tokens) with every API call. The 9P approach sends a namespace listing (248 tokens) once, then shell commands costing 30-70 output tokens each.
 
 \subsubsection{Results}
 
@@ -1098,7 +1096,7 @@ We conducted a 14-tool benchmark comparing MCP and 9P filesystem approaches on i
 Total tokens (14 tools) & 85,867 & 14,148 & \textbf{83.5\%} \\
 Average tokens/tool & 6,133 & 1,088 & 82.3\% \\
 API calls & 28 & 15 & 46\% fewer \\
-Schema overhead & 40,040 & $\sim$280 & 99.3\% \\
+Schema overhead & 40,040 & 248 & 99.4\% \\
 \hline
 \end{tabular}
 \caption{14-tool benchmark token comparison}
@@ -1127,7 +1125,7 @@ differ, the \textit{relative} comparison (83.5\% reduction) is robust: schema
 overhead dominates MCP regardless of tokenizer choice, and the 9P approach
 eliminates this overhead structurally. For reference, Anthropic's API returns
 usage metadata; spot-checks confirmed proxy counts within 5\% of reported values.
-``Total tokens'' includes prompt tokens (input), response tokens (output), and schema overhead. For MCP, schema overhead is 1,430 tokens $\times$ 28 calls = 40,040 tokens. For 9P, schema overhead is the one-time namespace listing ($\sim$280 tokens).
+``Total tokens'' includes prompt tokens (input), response tokens (output), and schema overhead. For MCP, schema overhead is 1,430 tokens $\times$ 28 calls = 40,040 tokens. For 9P, schema overhead is the one-time namespace listing (248 tokens).
 
 \subsection{Usability: Namespace Inference}
 

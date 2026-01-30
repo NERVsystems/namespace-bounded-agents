@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Token Comparison: MCP vs AgentFS
+Token Comparison: MCP vs 9P Filesystem
+
 Using OpenAI's tiktoken (cl100k_base) for accurate token counting.
 
 Citation:
@@ -23,174 +24,38 @@ def count_tokens(text: str) -> int:
     enc = tiktoken.get_encoding(ENCODING)
     return len(enc.encode(text))
 
-# MCP Tool Schemas (from osmmcp registry - 14 tools)
+# MCP Tool Schemas - 14 tools matching full_benchmark.py
+# These are the exact definitions used in the benchmark
 MCP_TOOLS = [
+    # TYPE A TOOLS (3)
     {
         "name": "geocode_address",
         "description": "Convert an address or place name to geographic coordinates",
-        "inputSchema": {
+        "input_schema": {
             "type": "object",
             "properties": {
-                "address": {
-                    "type": "string",
-                    "description": "The address or place name to geocode. For best results, format addresses clearly without parentheses and include city/country information for locations outside the US."
-                },
-                "region": {
-                    "type": "string",
-                    "description": "Optional region context to improve results for ambiguous queries"
-                }
+                "address": {"type": "string", "description": "The address or place name to geocode"},
+                "region": {"type": "string", "description": "Optional region context"}
             },
             "required": ["address"]
         }
     },
     {
         "name": "reverse_geocode",
-        "description": "Convert geographic coordinates to a street address",
-        "inputSchema": {
+        "description": "Convert geographic coordinates to a human-readable address",
+        "input_schema": {
             "type": "object",
             "properties": {
-                "latitude": {"type": "number", "description": "The latitude coordinate"},
-                "longitude": {"type": "number", "description": "The longitude coordinate"}
+                "latitude": {"type": "number", "description": "Latitude (-90 to 90)"},
+                "longitude": {"type": "number", "description": "Longitude (-180 to 180)"}
             },
             "required": ["latitude", "longitude"]
-        }
-    },
-    {
-        "name": "find_nearby_places",
-        "description": "Find points of interest near a specific location",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "latitude": {"type": "number", "description": "The latitude coordinate of the center point"},
-                "longitude": {"type": "number", "description": "The longitude coordinate of the center point"},
-                "radius": {"type": "number", "description": "Search radius in meters (max 10000)", "default": 1000},
-                "category": {"type": "string", "description": "Optional category filter (e.g., restaurant, hotel, park)"},
-                "limit": {"type": "number", "description": "Maximum number of results to return", "default": 10}
-            },
-            "required": ["latitude", "longitude"]
-        }
-    },
-    {
-        "name": "geo_distance",
-        "description": "Calculate distance between two points",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "from": {"type": "object", "description": "Starting point with latitude/longitude"},
-                "to": {"type": "object", "description": "Ending point with latitude/longitude"}
-            },
-            "required": ["from", "to"]
-        }
-    },
-    {
-        "name": "route_fetch",
-        "description": "Fetch a route between two points",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "start": {"type": "object", "description": "Starting point with latitude/longitude"},
-                "end": {"type": "object", "description": "Ending point with latitude/longitude"},
-                "mode": {"type": "string", "description": "Transport mode: car, bike, foot", "default": "car"}
-            },
-            "required": ["start", "end"]
-        }
-    },
-    {
-        "name": "suggest_meeting_point",
-        "description": "Suggest a meeting point for multiple locations",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "locations": {"type": "array", "description": "Array of latitude/longitude objects"},
-                "radius": {"type": "number", "description": "Search radius in meters"},
-                "category": {"type": "string", "description": "Type of venue (cafe, restaurant, park)"}
-            },
-            "required": ["locations"]
-        }
-    },
-    {
-        "name": "explore_area",
-        "description": "Explore an area and get key features",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "latitude": {"type": "number", "description": "Center latitude"},
-                "longitude": {"type": "number", "description": "Center longitude"},
-                "radius": {"type": "number", "description": "Search radius in meters"}
-            },
-            "required": ["latitude", "longitude"]
-        }
-    },
-    {
-        "name": "find_parking_facilities",
-        "description": "Find parking facilities near a location",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "latitude": {"type": "number", "description": "Center latitude"},
-                "longitude": {"type": "number", "description": "Center longitude"},
-                "radius": {"type": "number", "description": "Search radius in meters"},
-                "type": {"type": "string", "description": "Parking type filter"},
-                "include_private": {"type": "boolean", "description": "Include private parking"},
-                "limit": {"type": "number", "description": "Max results"}
-            },
-            "required": ["latitude", "longitude"]
-        }
-    },
-    {
-        "name": "find_charging_stations",
-        "description": "Find EV charging stations near a location",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "latitude": {"type": "number", "description": "Center latitude"},
-                "longitude": {"type": "number", "description": "Center longitude"},
-                "radius": {"type": "number", "description": "Search radius in meters"},
-                "limit": {"type": "number", "description": "Max results"}
-            },
-            "required": ["latitude", "longitude"]
-        }
-    },
-    {
-        "name": "find_schools_nearby",
-        "description": "Find schools near a location",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "latitude": {"type": "number", "description": "Center latitude"},
-                "longitude": {"type": "number", "description": "Center longitude"},
-                "radius": {"type": "number", "description": "Search radius in meters"},
-                "limit": {"type": "number", "description": "Max results"}
-            },
-            "required": ["latitude", "longitude"]
-        }
-    },
-    {
-        "name": "centroid_points",
-        "description": "Calculate the centroid of multiple points",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "points": {"type": "array", "description": "Array of latitude/longitude objects"}
-            },
-            "required": ["points"]
-        }
-    },
-    {
-        "name": "bbox_from_points",
-        "description": "Create a bounding box from multiple points",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "points": {"type": "array", "description": "Array of latitude/longitude objects"}
-            },
-            "required": ["points"]
         }
     },
     {
         "name": "polyline_decode",
         "description": "Decode a polyline string into coordinates",
-        "inputSchema": {
+        "input_schema": {
             "type": "object",
             "properties": {
                 "polyline": {"type": "string", "description": "Encoded polyline string"}
@@ -198,156 +63,289 @@ MCP_TOOLS = [
             "required": ["polyline"]
         }
     },
+    # TYPE B TOOLS (11)
+    {
+        "name": "find_nearby_places",
+        "description": "Find places near a location",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "latitude": {"type": "number", "description": "Center latitude"},
+                "longitude": {"type": "number", "description": "Center longitude"},
+                "radius": {"type": "number", "description": "Search radius in meters"},
+                "category": {"type": "string", "description": "Place category (restaurant, cafe, etc)"},
+                "limit": {"type": "number", "description": "Max results"}
+            },
+            "required": ["latitude", "longitude", "radius", "category"]
+        }
+    },
+    {
+        "name": "geo_distance",
+        "description": "Calculate distance between two points",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "lat1": {"type": "number", "description": "First point latitude"},
+                "lon1": {"type": "number", "description": "First point longitude"},
+                "lat2": {"type": "number", "description": "Second point latitude"},
+                "lon2": {"type": "number", "description": "Second point longitude"}
+            },
+            "required": ["lat1", "lon1", "lat2", "lon2"]
+        }
+    },
+    {
+        "name": "get_route",
+        "description": "Get route between two points",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "start_lat": {"type": "number", "description": "Start latitude"},
+                "start_lon": {"type": "number", "description": "Start longitude"},
+                "end_lat": {"type": "number", "description": "End latitude"},
+                "end_lon": {"type": "number", "description": "End longitude"},
+                "mode": {"type": "string", "description": "Travel mode: car, bike, foot"}
+            },
+            "required": ["start_lat", "start_lon", "end_lat", "end_lon"]
+        }
+    },
+    {
+        "name": "suggest_meeting_point",
+        "description": "Find meeting point between two locations",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "lat1": {"type": "number", "description": "First location latitude"},
+                "lon1": {"type": "number", "description": "First location longitude"},
+                "lat2": {"type": "number", "description": "Second location latitude"},
+                "lon2": {"type": "number", "description": "Second location longitude"},
+                "category": {"type": "string", "description": "Meeting point category"}
+            },
+            "required": ["lat1", "lon1", "lat2", "lon2"]
+        }
+    },
+    {
+        "name": "find_parking",
+        "description": "Find parking facilities near a location",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "latitude": {"type": "number", "description": "Center latitude"},
+                "longitude": {"type": "number", "description": "Center longitude"},
+                "radius": {"type": "number", "description": "Search radius in meters"}
+            },
+            "required": ["latitude", "longitude", "radius"]
+        }
+    },
+    {
+        "name": "find_charging_stations",
+        "description": "Find EV charging stations near a location",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "latitude": {"type": "number", "description": "Center latitude"},
+                "longitude": {"type": "number", "description": "Center longitude"},
+                "radius": {"type": "number", "description": "Search radius in meters"}
+            },
+            "required": ["latitude", "longitude", "radius"]
+        }
+    },
+    {
+        "name": "find_schools",
+        "description": "Find schools near a location",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "latitude": {"type": "number", "description": "Center latitude"},
+                "longitude": {"type": "number", "description": "Center longitude"},
+                "radius": {"type": "number", "description": "Search radius in meters"}
+            },
+            "required": ["latitude", "longitude", "radius"]
+        }
+    },
+    {
+        "name": "explore_area",
+        "description": "Explore an area and get key features",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "latitude": {"type": "number", "description": "Center latitude"},
+                "longitude": {"type": "number", "description": "Center longitude"},
+                "radius": {"type": "number", "description": "Exploration radius in meters"}
+            },
+            "required": ["latitude", "longitude", "radius"]
+        }
+    },
+    {
+        "name": "bbox_from_points",
+        "description": "Create bounding box from multiple points",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "latitude": {"type": "number"},
+                            "longitude": {"type": "number"}
+                        }
+                    },
+                    "description": "Array of coordinate points"
+                }
+            },
+            "required": ["points"]
+        }
+    },
+    {
+        "name": "centroid_points",
+        "description": "Calculate centroid of multiple points",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "latitude": {"type": "number"},
+                            "longitude": {"type": "number"}
+                        }
+                    },
+                    "description": "Array of coordinate points"
+                }
+            },
+            "required": ["points"]
+        }
+    },
     {
         "name": "polyline_encode",
         "description": "Encode coordinates into a polyline string",
-        "inputSchema": {
+        "input_schema": {
             "type": "object",
             "properties": {
-                "points": {"type": "array", "description": "Array of latitude/longitude objects"}
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "latitude": {"type": "number"},
+                            "longitude": {"type": "number"}
+                        }
+                    },
+                    "description": "Array of coordinate points to encode"
+                }
             },
             "required": ["points"]
         }
     }
 ]
 
-# AgentFS v0 Namespace (from actual Inferno `ls -R /n/osm` output)
-AGENTFS_NAMESPACE = """/n/osm:
+# 9P Namespace listing - 14 tools matching osm9p server
+# This is the complete namespace sent to the LLM
+NAMESPACE_14_TOOLS = """/n/osm:
+geocode/
+reverse/
+polyline_decode/
+nearby/
+distance/
+route/
+meeting_point/
+parking/
+charging/
+schools/
+explore/
 bbox/
 centroid/
-charging/
-distance/
-explore/
-geocode/
-meeting_point/
-nearby/
-parking/
-polyline_decode/
 polyline_encode/
-reverse/
-route/
-schools/
 
 /n/osm/geocode:
-_clear
-_example
-_ttl
-_types
-error
-poll
 query
+region
 
-/n/osm/nearby:
-_clear
-_example
-_ttl
-_types
-category
-error
+/n/osm/reverse:
 lat
 lon
-poll
+result
+
+/n/osm/polyline_decode:
+polyline
+result
+
+/n/osm/nearby:
+lat
+lon
 radius
+category
+limit
 result
 
 /n/osm/distance:
-_clear
-_ttl
-_types
-error
 lat1
-lat2
 lon1
+lat2
 lon2
-poll
 result
 
 /n/osm/route:
-_clear
-_ttl
-_types
-end_lat
-end_lon
-error
-mode
-poll
-result
 start_lat
 start_lon
+end_lat
+end_lon
+mode
+result
 
 /n/osm/meeting_point:
-_clear
-_ttl
-_types
-category
-error
 lat1
-lat2
 lon1
+lat2
 lon2
-poll
-result"""
-
-# Bare namespace (no metadata files - just functional files)
-BARE_NAMESPACE = """/n/osm:
-bbox/
-centroid/
-charging/
-distance/
-explore/
-geocode/
-meeting_point/
-nearby/
-parking/
-polyline_decode/
-polyline_encode/
-reverse/
-route/
-schools/
-
-/n/osm/geocode:
-query
-
-/n/osm/nearby:
 category
+result
+
+/n/osm/parking:
 lat
 lon
 radius
 result
 
-/n/osm/distance:
-lat1
-lat2
-lon1
-lon2
+/n/osm/charging:
+lat
+lon
+radius
 result
 
-/n/osm/route:
-end_lat
-end_lon
-mode
+/n/osm/schools:
+lat
+lon
+radius
 result
-start_lat
-start_lon
 
-/n/osm/meeting_point:
-category
-lat1
-lat2
-lon1
-lon2
+/n/osm/explore:
+lat
+lon
+radius
+result
+
+/n/osm/bbox:
+points
+result
+
+/n/osm/centroid:
+points
+result
+
+/n/osm/polyline_encode:
+points
 result"""
 
 def main():
     # Calculate token counts using tiktoken
-    mcp_json = json.dumps(MCP_TOOLS, indent=2)
+    mcp_json = json.dumps(MCP_TOOLS)  # No indent - matches actual API usage
     mcp_tokens = count_tokens(mcp_json)
-
-    agentfs_tokens = count_tokens(AGENTFS_NAMESPACE)
-    bare_tokens = count_tokens(BARE_NAMESPACE)
+    namespace_tokens = count_tokens(NAMESPACE_14_TOOLS)
 
     print("=" * 70)
-    print("TOKEN COMPARISON: MCP vs AgentFS")
+    print("TOKEN COMPARISON: MCP vs 9P Filesystem (14 tools)")
     print("Tokenizer: tiktoken cl100k_base (GPT-4/GPT-3.5-turbo)")
     print("=" * 70)
     print()
@@ -358,17 +356,14 @@ def main():
     print(f"{'Method':<30} {'Tokens':>10} {'Chars':>10}")
     print("-" * 50)
     print(f"{'MCP (JSON schemas)':<30} {mcp_tokens:>10,} {len(mcp_json):>10,}")
-    print(f"{'AgentFS v0 (with metadata)':<30} {agentfs_tokens:>10,} {len(AGENTFS_NAMESPACE):>10,}")
-    print(f"{'Bare namespace':<30} {bare_tokens:>10,} {len(BARE_NAMESPACE):>10,}")
+    print(f"{'9P Namespace':<30} {namespace_tokens:>10,} {len(NAMESPACE_14_TOOLS):>10,}")
     print("-" * 50)
     print()
 
-    reduction_agentfs = ((mcp_tokens - agentfs_tokens) / mcp_tokens * 100)
-    reduction_bare = ((mcp_tokens - bare_tokens) / mcp_tokens * 100)
+    reduction = ((mcp_tokens - namespace_tokens) / mcp_tokens * 100)
 
-    print("TOKEN REDUCTION vs MCP:")
-    print(f"  AgentFS v0:    {reduction_agentfs:.1f}% reduction ({mcp_tokens - agentfs_tokens:,} tokens saved)")
-    print(f"  Bare:          {reduction_bare:.1f}% reduction ({mcp_tokens - bare_tokens:,} tokens saved)")
+    print("TOKEN REDUCTION:")
+    print(f"  9P vs MCP: {reduction:.1f}% reduction ({mcp_tokens - namespace_tokens:,} tokens saved)")
     print()
 
     # Context window impact
@@ -378,31 +373,28 @@ def main():
     print("CONTEXT WINDOW IMPACT:")
     print(f"  128K context (GPT-4):")
     print(f"    MCP:      {mcp_tokens / CONTEXT_128K * 100:.3f}%")
-    print(f"    AgentFS:  {agentfs_tokens / CONTEXT_128K * 100:.3f}%")
-    print(f"    Bare:     {bare_tokens / CONTEXT_128K * 100:.3f}%")
+    print(f"    9P:       {namespace_tokens / CONTEXT_128K * 100:.3f}%")
     print()
     print(f"  200K context (Claude):")
     print(f"    MCP:      {mcp_tokens / CONTEXT_200K * 100:.3f}%")
-    print(f"    AgentFS:  {agentfs_tokens / CONTEXT_200K * 100:.3f}%")
-    print(f"    Bare:     {bare_tokens / CONTEXT_200K * 100:.3f}%")
+    print(f"    9P:       {namespace_tokens / CONTEXT_200K * 100:.3f}%")
+    print()
+
+    # Per-tool breakdown
+    print("PER-TOOL AVERAGE:")
+    mcp_per_tool = mcp_tokens / len(MCP_TOOLS)
+    ns_per_tool = namespace_tokens / len(MCP_TOOLS)
+    print(f"  MCP:  {mcp_per_tool:.1f} tokens/tool")
+    print(f"  9P:   {ns_per_tool:.1f} tokens/tool")
     print()
 
     # Scaling projection
-    print("SCALING PROJECTION (tools → tokens):")
-    mcp_per_tool = mcp_tokens / len(MCP_TOOLS)
-    agentfs_per_tool = agentfs_tokens / len(MCP_TOOLS)
-    bare_per_tool = bare_tokens / len(MCP_TOOLS)
-    print(f"  Per-tool average:")
-    print(f"    MCP:      {mcp_per_tool:.1f} tokens/tool")
-    print(f"    AgentFS:  {agentfs_per_tool:.1f} tokens/tool")
-    print(f"    Bare:     {bare_per_tool:.1f} tokens/tool")
-    print()
-
-    # Project to 50 tools
-    print(f"  Projected at 50 tools:")
-    print(f"    MCP:      {50 * mcp_per_tool:,.0f} tokens")
-    print(f"    AgentFS:  {50 * agentfs_per_tool:,.0f} tokens")
-    print(f"    Savings:  {50 * (mcp_per_tool - agentfs_per_tool):,.0f} tokens")
+    print("SCALING PROJECTION:")
+    for n in [25, 50, 100]:
+        print(f"  {n} tools:")
+        print(f"    MCP:      {n * mcp_per_tool:,.0f} tokens")
+        print(f"    9P:       {n * ns_per_tool:,.0f} tokens")
+        print(f"    Savings:  {n * (mcp_per_tool - ns_per_tool):,.0f} tokens")
     print()
 
     # Citation
