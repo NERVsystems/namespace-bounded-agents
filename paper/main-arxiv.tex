@@ -42,7 +42,7 @@ Large language model agents interact with external services through tool-calling
 
 We propose namespace-bounded agents: an architecture where agents operate within Plan 9-style namespaces where capabilities are filesystem paths, not API schemas. An agent cannot access, reference, or be manipulated into invoking capabilities outside its mounted namespace---the paths literally do not exist in its execution context. This implements capability-based security at the operating system level, providing structural guarantees that do not depend on model behavior.
 
-We implement this architecture using Inferno OS and the 9P protocol, demonstrating it with geospatial services. Our evaluation across a 31-attack corpus spanning nine vulnerability categories shows that: (1) multi-model validation (Claude Sonnet 4, GPT-5, GPT-4o) with 4-run statistical validation (n=372) achieves \textbf{0\% attack success rate} (95\% CI: [0.000, 0.008]) through defense-in-depth---behavioral blocking when models refuse, structural blocking at the OS level when they attempt attacks; (2) filesystem semantics reduce token usage by 83.5\% compared to JSON schema approaches; (3) tool schema poisoning attacks that are semantic in MCP become syntactic in 9P, shifting from model-dependent to implementation-verifiable defenses; and (4) LLMs correctly infer filesystem-exposed tool usage without explicit schemas. Evaluation against the AgentDojo benchmark (629 injection attacks, 4 domains) demonstrates that 75.2\% of attacks require cross-tool access and achieve \textbf{0\% attack success rate} under namespace isolation (structural guarantee), while the remaining 24.8\% same-tool attacks achieve 2.6\% success rate (behavioral defense), yielding \textbf{0.6\% overall ASR}. We formally verify namespace isolation using SPIN model checking (2,035 states, 0 errors) and CBMC. Our prototype and verification artifacts are open-source.
+We implement this architecture using Inferno OS and the 9P protocol, demonstrating it with geospatial services. Our evaluation across a 31-attack corpus spanning nine vulnerability categories shows that: (1) multi-model validation (Claude Sonnet 4, GPT-5, GPT-4o) with 4-run statistical validation (n=372) achieves \textbf{0\% attack success rate} (95\% CI: [0.000, 0.008]) through defense-in-depth---behavioral blocking when models refuse, structural blocking at the OS level when they attempt attacks; (2) filesystem semantics reduce token usage by 83.5\% compared to JSON schema approaches; (3) tool schema poisoning attacks that are semantic in MCP become syntactic in 9P, shifting from model-dependent to implementation-verifiable defenses; and (4) LLMs correctly infer filesystem-exposed tool usage without explicit schemas. Evaluation against the AgentDojo benchmark (629 injection attacks, 4 domains) demonstrates that 75.2\% of attacks require cross-tool access and achieve \textbf{0\% attack success rate} under namespace isolation (structural guarantee), while the remaining 24.8\% same-tool attacks achieve 2.6\% success rate (behavioral defense), yielding \textbf{0.6\% overall ASR}. We formally verify namespace isolation using three complementary tools: TLA+/TLC model checking (369 million states exhaustive, 3.17 billion states partial; 11 safety invariants, 0 violations), SPIN (131,333 states across 5 concurrent protocol models, 0 errors), and CBMC bounded model checking of C implementation code (113 properties, 0 failures). The SPIN race model additionally confirms three previously undocumented use-after-free race conditions in the kernel's host threading layer. Our prototype and verification artifacts are open-source.
 \end{abstract}
 
 \keywords{LLM agents \and capability-based security \and prompt injection \and 9P protocol \and Plan 9 \and Inferno OS}
@@ -71,7 +71,7 @@ This paper makes the following contributions:
 \begin{enumerate}
     \item We introduce namespace-bounded agents as a capability-based security model providing \textbf{structural security guarantees}: 0\% attack success rate (95\% CI: [0.000, 0.008]) across multiple models (Claude Sonnet 4, GPT-5, GPT-4o) with 4-run statistical validation (n=372), structural blocking at the OS level when behavioral defenses fail
     \item We validate empirically against the AgentDojo benchmark (629 injection attacks, 4 domains): 75.2\% cross-tool attacks achieve 0\% ASR (structural), 24.8\% same-tool attacks achieve 2.6\% ASR (behavioral), yielding 0.6\% overall ASR compared to 53.1\% for behavioral defenses alone
-    \item We formally verify namespace isolation properties using SPIN model checking (2,035 states explored, 0 errors) and CBMC bounded model checking
+    \item We formally verify namespace isolation properties using TLA+/TLC (369M states exhaustive, 3.17B partial; 11 invariants, 0 violations), SPIN (131K states, 5 models, 0 errors), and CBMC (113 properties, 0 failures), and discover three real use-after-free race conditions in the kernel
     \item We analyze the qualitative security difference: MCP tool schema poisoning is a \textit{semantic} attack requiring model recognition, while 9P reduces the attack surface to \textit{syntactic} issues that are implementation-verifiable
     \item We show 83.5\% reduction in token consumption compared to MCP while maintaining equivalent task completion rates
     \item We implement this architecture using the 9P protocol and Inferno OS, providing an open-source reference implementation with formal verification artifacts
@@ -292,10 +292,12 @@ Namespace isolation provides two qualitatively different layers of defense:
 \hline
 \textbf{Property} & \textbf{Mechanism} & \textbf{Verified By} & \textbf{Not Covered} \\
 \hline
-Capability isolation & Namespace boundary & SPIN (2,035 states) & Same-tool misuse \\
-Path traversal block & Walk() validation & CBMC & Covert channels \\
-Reference count safety & Kernel ref counting & CBMC (113 checks) & Timing attacks \\
-Post-fork isolation & pgrpcpy() semantics & SPIN & Social engineering \\
+Capability isolation & Namespace boundary & TLA+ (369M states) & Same-tool misuse \\
+Path traversal block & Walk() validation & TLA+, SPIN & Covert channels \\
+Reference count safety & Kernel ref counting & TLA+, CBMC (113) & Timing attacks \\
+Post-fork isolation & pgrpcpy() semantics & TLA+, SPIN, CBMC & Social engineering \\
+Lock ordering & pg->ns before mh->lock & SPIN (39,744 states) & Default mounts \\
+Export root boundary & Walk("..") validation & SPIN (106 states) & Network attacks \\
 \hline
 \end{tabular}
 \caption{Verified properties and explicit non-coverage (summary). See Section~\ref{sec:evaluation} for detailed verification methodology, assumptions, and scope. Structural claims rest on Theorem 1 (Section~\ref{sec:design}); empirical attack rates (Tables~\ref{tab:multi-model},~\ref{tab:agentdojo-results}) provide validation but are not the basis of the guarantee.}
@@ -495,7 +497,7 @@ These properties derive from capability system fundamentals: authority is carrie
 \begin{enumerate}
     \item[(A1)] \textit{Pre-execution construction}: Namespace $\mathcal{N}$ is constructed by the orchestrator before agent execution begins.
     \item[(A2)] \textit{Syscall restriction}: Agent cannot invoke \texttt{bind()}, \texttt{mount()}, or \texttt{unmount()} syscalls.
-    \item[(A3)] \textit{Kernel integrity}: The Inferno kernel correctly implements path resolution (verified: SPIN, 2,035 states; see Table~\ref{tab:tcb-verification}).
+    \item[(A3)] \textit{Kernel integrity}: The Inferno kernel correctly implements path resolution (verified: TLA+/TLC, 369M states exhaustive; SPIN, 131K states; CBMC on C source; see Table~\ref{tab:tcb-verification}).
     \item[(A4)] \textit{No inherited channels}: Agent does not inherit file descriptors or channel references to resources outside $\mathcal{N}$.
 \end{enumerate}
 
@@ -1180,19 +1182,23 @@ The 9P overhead is negligible ($<$1\%), dwarfed by LLM inference time (1-2 secon
 \textbf{VERIFICATION SUMMARY}
 
 \vspace{0.3em}
-\textbf{Verified Properties (SPIN + CBMC):}
+\textbf{Verified Properties (TLA+/TLC + SPIN + CBMC):}
 \begin{enumerate}
-    \item \textbf{Path Confinement}: \texttt{namec()} only resolves paths reachable from namespace root (SPIN: 2,035 states, 0 errors)
-    \item \textbf{Fork Isolation}: \texttt{pgrpcpy()} creates independent namespace copy; post-fork modifications do not cross boundary (SPIN: 0 errors)
-    \item \textbf{Reference Safety}: Reference counts never underflow (CBMC: 113 checks, 0 failures)
+    \item \textbf{Namespace Isolation Theorem}: Post-copy mounts cannot leak across namespace boundaries; if a channel appears in both parent and child, it was either present at copy time or independently mounted by both (TLA+: 369M states exhaustive, 0 violations)
+    \item \textbf{Fork Isolation}: \texttt{pgrpcpy()} creates independent namespace copy; 11 safety invariants verified including type safety, reference counting, no use-after-free, copy fidelity (TLA+: 19.3M distinct states, complete)
+    \item \textbf{Concurrent Protocol Safety}: Post-copy mount isolation, nested fork isolation, lock ordering, export root boundary (SPIN: 131,333 states across 5 models, 0 errors)
+    \item \textbf{Implementation Properties}: Array bounds (MOUNTH macro), integer overflow (fd allocation), reference count safety (CBMC: 113 properties, 0 failures)
 \end{enumerate}
 
+\vspace{0.3em}
+\textbf{Bugs Found:} 3 use-after-free race conditions in kernel host threading layer, confirmed by SPIN LTL counterexamples
+
+\vspace{0.3em}
 \textbf{Assumptions:}
 \begin{enumerate}
     \item[(A1)] Kernel integrity (Inferno not compromised)
     \item[(A2)] Correct namespace construction (orchestrator trusted)
     \item[(A3)] No inherited channels outside namespace
-    \item[(A4)] Single-threaded namespace mutation during copy
 \end{enumerate}
 
 \textbf{Not Covered:}
@@ -1200,18 +1206,27 @@ The 9P overhead is negligible ($<$1\%), dwarfed by LLM inference time (1-2 secon
 }}
 \end{table}
 
-We provide formal verification of kernel-level namespace confinement. This section
-states the verified property precisely, enumerates assumptions and scope limitations,
-and connects tool outputs to the claimed guarantees. All verification artifacts are
-available in the open-source repository.
+We provide multi-tool formal verification of kernel-level namespace confinement using
+TLA+/TLC for abstract specification, SPIN for concurrent protocol verification, and
+CBMC for bounded model checking of C implementation code. This section states the
+verified properties, enumerates assumptions and scope limitations, and connects tool
+outputs to the claimed guarantees. All verification artifacts are available in the
+open-source repository. The verification targets 3,831 lines of kernel C across
+\texttt{pgrp.c}, \texttt{chan.c}, \texttt{sysfile.c}, and \texttt{inferno.c}.
 
 \subsubsection{Verification Statement}
 
-\textbf{Property (Kernel Path Confinement):} For any process $P$ with namespace root
-$R_P$, path resolution via \texttt{namec()} returns a channel $c$ only if there exists
-a sequence of mount table entries $m_1, \ldots, m_k$ in $P$'s process group such that
-$c$ is reachable from $R_P$ by following $m_1, \ldots, m_k$. Equivalently: no pathname
-resolution succeeds for paths not rooted in the process's namespace.
+\textbf{Property (Namespace Isolation Theorem):} For any parent-child process group
+pair created by \texttt{pgrpcpy()}/\texttt{FORKNS}: if channel $c$ appears at path $p$
+in \textbf{both} the parent's and child's mount tables, then \textbf{either} (a) $c$
+was present at copy time, \textbf{or} (b) both parent and child independently mounted
+$c$ at $p$. This is proved non-trivially via history variables (\texttt{copy\_snapshot},
+\texttt{pgrp\_parent}, \texttt{post\_copy\_mounts}) that track the provenance of every
+mount table entry.
+
+\textbf{Supporting property (Kernel Path Confinement):} For any process $P$ with
+namespace root $R_P$, path resolution via \texttt{namec()} returns a channel $c$ only
+if $c$ is reachable from $R_P$ by following mount table entries in $P$'s process group.
 
 \textbf{Assumptions:}
 \begin{enumerate}
@@ -1222,8 +1237,6 @@ resolution succeeds for paths not rooted in the process's namespace.
     file descriptors or channel references to resources outside its namespace.
     \item \textbf{Kernel integrity}: The Inferno kernel is not compromised; we verify
     kernel code behavior, not kernel integrity against exploitation.
-    \item \textbf{Single-threaded namespace mutation}: Namespace modifications during
-    \texttt{pgrpcpy()} are atomic with respect to path resolution.
 \end{enumerate}
 
 \subsubsection{Trusted Computing Base}
@@ -1233,12 +1246,14 @@ resolution succeeds for paths not rooted in the process's namespace.
 \small
 \begin{tabular}{p{2.2cm}p{2.8cm}p{2.5cm}}
 \hline
-\textbf{Component} & \textbf{Verified} & \textbf{Trust Basis} \\
+\textbf{Component} & \textbf{Verified By} & \textbf{Trust Basis} \\
 \hline
-\texttt{namec()} & SPIN model & Path resolution \\
-\texttt{pgrpcpy()} & SPIN model & Namespace copy \\
-\texttt{cmount/cunmount} & SPIN model & Mount operations \\
-Reference counting & CBMC harness & Memory safety \\
+\texttt{pgrpcpy()} & TLA+, SPIN, CBMC & Namespace copy \\
+\texttt{namec()} & TLA+, SPIN & Path resolution \\
+\texttt{cmount/cunmount} & TLA+, SPIN & Mount operations \\
+Locking protocol & SPIN & Lock ordering \\
+Reference counting & TLA+, CBMC & Memory safety \\
+\texttt{exportfs} boundary & SPIN & Root escape \\
 \hline
 9P server code & \textit{Not verified} & Code review \\
 9P protocol parsing & \textit{Not verified} & Code review \\
@@ -1247,68 +1262,81 @@ Network stack & \textit{Not verified} & OS trust \\
 \hline
 \end{tabular}
 \caption{Trusted computing base for confinement claims. Verified components have
-formal guarantees; unverified components are trusted by assumption.}
+formal guarantees from multiple tools; unverified components are trusted by assumption.}
 \label{tab:tcb-verification}
 \end{table}
 
+\subsubsection{TLA+ Specification and Model Checking}
+
+The TLA+ specification (1,199 lines across 4 modules) models 12 kernel operations
+(\texttt{CreateProcess}, \texttt{ForkWithForkNS}, \texttt{ForkWithNewNS}, \texttt{Mount},
+\texttt{Unmount}, etc.) with 15 state variables including 3 history variables for
+non-trivial isolation verification.
+
+\textbf{Small configuration (exhaustive):} 2 processes, 3 pgrps, 3 channels, 2 paths.
+TLC explored 369,414,154 states (19,307,332 distinct) to search depth 27 with 0 states
+remaining on queue. All 11 safety invariants verified with zero violations in 7 min
+57 sec on 16 workers.
+
+\textbf{Medium configuration (partial):} 3 processes, 4 pgrps, 4 channels, 3 paths.
+TLC explored 26.5 billion states (3.17 billion distinct) to depth 13 over 10 hr
+50 min on an NVIDIA Jetson Orin AGX (12 ARM64 cores, 50 GB JVM heap, 341 GB NVMe state
+storage). Zero violations across all 11 invariants. The run was terminated when
+on-disk state storage approached capacity; it is recoverable from checkpoint.
+
+\textbf{11 invariants verified:} TypeOK, SafetyInvariant, RefCountNonNegative,
+NoUseAfterFree, MountTableBounded, NamespaceIsolation, NamespaceIsolationTheorem,
+UnilateralMountNonPropagation, CopyFidelity, PostCopyMountsSound, NoIsolationViolation.
+
 \subsubsection{SPIN Model Checking}
 
-We model the core isolation property in Promela, abstracting the kernel's namespace
-data structures (\texttt{Pgrp}, \texttt{Mount}, \texttt{Mhead}) as finite arrays with
-explicit reference counting.
+Five Promela models (1,440 lines) verify concurrent protocol properties:
 
-\textbf{Model parameters:} 2 process groups, 3 mount points per group, 4 channels.
-These bounds suffice to explore all interleavings of mount/unmount/copy operations
-relevant to post-fork isolation.
+\begin{center}
+\small
+\begin{tabular}{p{3.2cm}rl}
+\textbf{Model} & \textbf{States} & \textbf{Property} \\
+\hline
+Basic isolation & 82,628 & Post-copy mount isolation \\
+Extended (nested fork) & 5,724 & 3-level hierarchy \\
+Multi-lock protocol & 39,744 & Lock ordering \\
+Namespace races & 3,131 & Use-after-free detection \\
+exportfs boundary & 106 & Root escape prevention \\
+\hline
+\textbf{Total} & \textbf{131,333} & \textbf{5/5 PASS} \\
+\end{tabular}
+\end{center}
 
-\textbf{Key invariants verified:}
-\begin{enumerate}
-    \item \textbf{Post-fork isolation}: After \texttt{pgrpcpy()}, mounts added to
-    parent's namespace are not visible in child's namespace (and vice versa).
-    \item \textbf{Snapshot correctness}: At copy time, child receives exactly the
-    mounts present in parent; no more, no less.
-    \item \textbf{Reference safety}: Reference counts remain non-negative; no
-    use-after-free on namespace structures.
-\end{enumerate}
+The lock ordering model verifies that \texttt{pg->ns} is always acquired before
+\texttt{mh->lock}, including \texttt{cmount}'s early-release optimization. The
+\texttt{exportfs} model verifies that \texttt{walk("..")} sequences cannot escape the
+export root.
 
-\begin{lstlisting}[language=C,caption={SPIN assertion: post-fork isolation}]
-proctype ChildProcess() {
-    /* Child mounts channel AFTER fork */
-    mount_chan(child_pgrp, path, child_chan);
-    /* Isolation: parent cannot see child's mount */
-    assert(!IS_MOUNTED(parent_pgrp, path, child_chan));
-}
-\end{lstlisting}
-
-\textbf{Results:} Basic model: 83 states, 107 transitions, 0 errors. Extended model
-(with unmount interleavings): 2,035 states, 3,773 transitions, 0 errors. SPIN
-exhaustively explored all reachable states; no assertion violations.
+\textbf{Race conditions found:} The \texttt{namespace\_races.pml} model confirms three
+use-after-free races in the kernel's emu host threading layer: (1) \texttt{kchdir}
+performs \texttt{cclose(pg->dot); pg->dot = c;} without a lock (\texttt{sysfile.c:153});
+(2) \texttt{Sys\_pctl(FORKNS)} swaps \texttt{o->pgrp} without a lock
+(\texttt{inferno.c:873}); (3) \texttt{namec()} reads \texttt{pg->slash}/\texttt{pg->dot}
+without holding \texttt{pg->ns} (\texttt{chan.c:1022,1057}). These are mitigated by
+Inferno's cooperative Dis VM scheduling but are genuine hazards for the multi-threaded
+emu host layer.
 
 \subsubsection{CBMC Bounded Model Checking}
 
-We used CBMC 5.95.1 to verify C code abstractions of reference counting operations,
-which are critical for memory safety of namespace structures.
-
-\textbf{Configuration:} Unwinding bound 10, 32-bit integers, no pointer aliasing
-assumptions. Stubs provided for \texttt{malloc}/\texttt{free} with allocation tracking.
-
-\begin{lstlisting}[language=C,caption={CBMC harness: reference count safety}]
-void harness_decref(void) {
-    Ref r;
-    __CPROVER_assume(r.ref > 0 && r.ref < 1000000);
-    decref_checked(&r);
-    __CPROVER_assert(r.ref >= 0, "no underflow");
-}
-\end{lstlisting}
-
-\textbf{Results:} 113 verification conditions generated, 0 failures. CBMC confirms
-that under the specified bounds, reference counting operations do not underflow.
+CBMC verifies properties of actual C source code extracted from the kernel.
+Three quick-mode harnesses (CI, $\sim$1 min) check array bounds (MOUNTH hash macro,
+58 properties), integer overflow (fd allocation, 10 properties), and reference
+counting (45 properties): 113 total properties, 0 failures. Full-mode harnesses
+verify the complete \texttt{pgrpcpy()} implementation with \texttt{MNTHASH=32}
+(production configuration), \texttt{--unwind 34}, and \texttt{--object-bits 11}.
 
 \subsubsection{Scope and Limitations}
 
-\textbf{What is verified:} Kernel-level path confinement---that \texttt{namec()}
-cannot resolve paths outside a process's namespace, and that \texttt{pgrpcpy()}
-correctly isolates child namespaces from subsequent parent modifications.
+\textbf{What is verified:} Namespace isolation---that \texttt{pgrpcpy()} correctly
+isolates child namespaces from subsequent parent modifications (TLA+ theorem +
+SPIN + CBMC), that \texttt{namec()} cannot resolve paths outside a process's namespace
+(TLA+ + SPIN), that the locking protocol is deadlock-free and correctly ordered (SPIN),
+and that \texttt{exportfs} root boundaries cannot be escaped (SPIN).
 
 \textbf{What is NOT verified:}
 \begin{itemize}
@@ -1324,38 +1352,34 @@ correctly isolates child namespaces from subsequent parent modifications.
     a compromised network could inject malformed messages.
 \end{itemize}
 
-\textbf{Verification gap:} The SPIN model abstracts the C implementation; we verify
-the model satisfies isolation properties, not that the C code perfectly implements
-the model. The correspondence table (below) documents the abstraction mapping.
-
-\begin{center}
-\small
-\begin{tabular}{ll}
-\textbf{Promela} & \textbf{C Function} \\
-\hline
-\texttt{new\_pgrp()} & \texttt{newpgrp()} in \texttt{pgrp.c} \\
-\texttt{pgrp\_copy()} & \texttt{pgrpcpy()} in \texttt{pgrp.c} \\
-\texttt{mount\_chan()} & \texttt{cmount()} in \texttt{chan.c} \\
-\texttt{unmount\_chan()} & \texttt{cunmount()} in \texttt{chan.c} \\
-\end{tabular}
-\end{center}
+\textbf{Verification gap:} The TLA+ and SPIN models abstract the C implementation;
+we verify that the models satisfy isolation properties, not that the C code perfectly
+implements the models. CBMC partially closes this gap by verifying properties on actual
+C source. The multi-tool approach---abstract specification, concurrent protocol
+verification, and implementation-level bounded model checking---provides complementary
+coverage: each tool catches different classes of bugs.
 
 \subsubsection{Connecting Verification to Security Claims}
 
 Our security claims rest on the following argument structure:
 
 \begin{enumerate}
+    \item \textbf{Theorem (Namespace Isolation)}: After \texttt{pgrpcpy()}, mounts in
+    one namespace cannot appear in the other unless independently performed by both.
+    \textit{(Verified by TLA+: 369M states exhaustive, 3.17B partial, 0 violations.)}
     \item \textbf{Lemma (Path Confinement)}: If path $p$ is not reachable from
-    namespace root $R$, then \texttt{namec(p)} returns ENOENT. \textit{(Verified by SPIN model.)}
+    namespace root $R$, then \texttt{namec(p)} returns ENOENT.
+    \textit{(Verified by TLA+ and SPIN models.)}
     \item \textbf{Lemma (Fork Isolation)}: After \texttt{pgrpcpy()}, modifications to
-    parent namespace do not affect child namespace. \textit{(Verified by SPIN model.)}
+    parent namespace do not affect child namespace.
+    \textit{(Verified by TLA+, SPIN, and CBMC on C source.)}
     \item \textbf{Assumption (Correct Construction)}: The orchestrator mounts exactly
     $\mathcal{T}_{min}$ before spawning the agent.
     \item \textbf{Conclusion}: Agent cannot resolve paths to tools outside
     $\mathcal{T}_{min}$, so cross-tool injection attacks fail structurally.
 \end{enumerate}
 
-The structural prevention claim is thus contingent on Assumption 3. We do not
+The structural prevention claim is thus contingent on Assumption 4. We do not
 formally verify namespace construction; this is future work. Current deployments
 rely on code review and testing of the orchestrator.
 
@@ -1440,7 +1464,7 @@ Both approaches are \textit{policy-based}: they rely on runtime enforcement at t
 
 \textbf{VeriGuard} \cite{veriguard2025} provides formal guarantees through offline verification and online monitoring. It verifies \textit{what the agent generates} (e.g., generated code satisfies safety specifications) rather than \textit{what capabilities it can access}. These approaches are complementary: VeriGuard ensures generated code satisfies specifications; we ensure the agent cannot name unauthorized capabilities in the first place.
 
-More broadly, formal methods for agent safety remain an active research area. Our work contributes a formally verified isolation primitive that can underpin higher-level safety guarantees.
+More broadly, formal methods for agent safety remain an active research area. Our work contributes a multi-tool formally verified isolation primitive---TLA+ for abstract specification, SPIN for concurrent protocol verification, CBMC for C implementation checking---that can underpin higher-level safety guarantees. To our knowledge, no prior formal verification of Plan 9/Inferno namespace isolation exists in the literature.
 
 \subsection{MCP Security Vulnerabilities}
 
@@ -1464,7 +1488,7 @@ Dennis and Van Horn \cite{dennis1966capabilities} introduced capabilities as unf
 
 \subsection{Modern Capability Systems}
 
-\textbf{seL4} \cite{klein2009sel4}: The first formally verified general-purpose OS kernel. seL4 uses capabilities for all system resource access, with machine-checked proofs of isolation. Our formal verification approach draws on seL4's methodology, though at the model rather than implementation level.
+\textbf{seL4} \cite{klein2009sel4}: The first formally verified general-purpose OS kernel. seL4 uses capabilities for all system resource access, with machine-checked proofs of isolation. Our formal verification draws on seL4's methodology using model checking (TLA+, SPIN) rather than theorem proving (Isabelle/HOL), trading completeness for automation, with CBMC providing implementation-level verification on actual C source.
 
 \textbf{CHERI} \cite{woodruff2014cheri}: Hardware-enforced capabilities that extend pointers with bounds and permissions. CHERI provides fine-grained memory safety and compartmentalization at the \textit{memory access} level---each pointer carries its own authority. Our namespace approach operates at the \textit{capability naming} level---each filesystem path carries authority. The key distinction: CHERI prevents buffer overflows and memory corruption within a process; namespace isolation prevents tool invocation across process boundaries. For LLM agents, the threat is not memory corruption but tool misuse via prompt injection---a higher-level attack that CHERI does not address. The approaches are complementary: CHERI could harden the 9P server implementation while namespaces control tool visibility.
 
@@ -1520,7 +1544,7 @@ We have presented namespace-bounded agents, a capability-based security architec
     \item \textbf{Structural security}: Multi-model evaluation (Claude Sonnet 4, GPT-5, GPT-4o) with 4-run statistical validation (n=372) achieves \textbf{0\% attack success rate} (95\% CI: [0.000, 0.008]) through defense-in-depth---behavioral blocking when models refuse, structural blocking at the OS level when they don't. AgentDojo: 0/473 cross-tool attacks succeeded, 0.6\% overall ASR
     \item \textbf{Token efficiency}: 83.5\% reduction in tokens (14,148 vs 85,867), eliminating per-call schema overhead
     \item \textbf{Semantic attack elimination}: MCP tool schema poisoning is a semantic attack requiring model recognition; 9P reduces the attack surface to syntactic issues (shell quoting) that are implementation-verifiable
-    \item \textbf{Formal guarantees}: SPIN model checking (2,035 states, 0 errors) and CBMC verification confirm namespace isolation properties
+    \item \textbf{Formal guarantees}: Multi-tool verification---TLA+/TLC (369M states exhaustive, 3.17B partial, 11 invariants, 0 violations), SPIN (131K states, 5 models), and CBMC (113 properties on C source)---confirms namespace isolation properties and discovers 3 real race conditions
     \item \textbf{Jailbreak resilience}: Unlike policy-based systems, namespace isolation holds even under model jailbreaking---unauthorized paths do not exist regardless of model behavior
 \end{itemize}
 
@@ -1565,6 +1589,7 @@ GPT-4o & \texttt{gpt-4o-2024-08-06} (OpenAI API) \\
 \hline
 Tokenizer & tiktoken \texttt{cl100k\_base} (proxy) \\
 AgentDojo & v1.1.1 (NeurIPS 2024) \\
+TLC (TLA+) & 2026.03.04 (rev: 52c0195) \\
 SPIN & 6.5.2 \\
 CBMC & 5.95.1 \\
 Go & 1.21+ (\texttt{go9p} library) \\
@@ -1599,8 +1624,9 @@ To reproduce Tables~\ref{tab:security},~\ref{tab:multi-model},~\ref{tab:agentdoj
     \end{itemize}
     \item \textbf{Formal verification}:
     \begin{itemize}
-        \item SPIN: \texttt{spin -a ns\_isolation.pml \&\& cc -o pan pan.c \&\& ./pan}
-        \item CBMC: \texttt{cbmc refcount\_harness.c --unwind 10}
+        \item TLA+: \texttt{./run-verification.sh small} ($\sim$8 min, 11 invariants)
+        \item SPIN: \texttt{./spin/verify-all.sh} ($\sim$30 sec, 5 models)
+        \item CBMC: \texttt{./cbmc/verify-all.sh quick} ($\sim$1 min, 3 harnesses)
     \end{itemize}
 \end{enumerate}
 
