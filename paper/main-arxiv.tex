@@ -1415,7 +1415,7 @@ Our AgentDojo evaluation provides empirical evidence for this distinction: cross
 
 \textbf{Cross-model comparison caveat.} The AgentDojo comparison (0.6\% ASR vs.\ 53.1\% published baseline) uses different models: Claude Sonnet 4 with namespace isolation vs.\ GPT-4o without. The 0\% cross-tool ASR is model-independent (structural), but the 2.6\% same-tool ASR reflects Claude's behavioral defense. A same-model baseline (Claude Sonnet 4 without namespace isolation) would isolate the namespace contribution more precisely; this is future work.
 
-\textbf{Ecosystem adoption.} The Plan 9/Inferno ecosystem is small. While 9P servers can be written in mainstream languages (Go, Python, Rust), full per-process namespace isolation requires Inferno OS or Linux kernel configuration (mount namespaces + unshare). Section~\ref{sec:discussion} discusses deployment pathways via FUSE, containers, and WebAssembly.
+\textbf{Ecosystem adoption.} The Plan 9/Inferno ecosystem is small. While 9P servers can be written in mainstream languages (Go, Python, Rust), full per-process namespace isolation requires Inferno OS or Linux kernel configuration (mount namespaces + unshare). Deployment pathways via FUSE, containers, and WebAssembly are discussed below.
 
 \textbf{Filesystem abstraction.} Some operations map awkwardly to file semantics. Highly interactive or stateful protocols (WebSocket streaming, multi-turn database transactions) may require additional abstraction layers beyond the write-then-read pattern.
 
