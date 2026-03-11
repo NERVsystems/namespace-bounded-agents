@@ -1187,7 +1187,7 @@ The 9P overhead is negligible ($<$1\%), dwarfed by LLM inference time (1-2 secon
     \item \textbf{Namespace Isolation Theorem}: Post-copy mounts cannot leak across namespace boundaries; if a channel appears in both parent and child, it was either present at copy time or independently mounted by both (TLA+: 369M states exhaustive, 0 violations)
     \item \textbf{Fork Isolation}: \texttt{pgrpcpy()} creates independent namespace copy; 11 safety invariants verified including type safety, reference counting, no use-after-free, copy fidelity (TLA+: 19.3M distinct states, complete)
     \item \textbf{Concurrent Protocol Safety}: Post-copy mount isolation, nested fork isolation, lock ordering, export root boundary (SPIN: 131,333 states across 5 models, 0 errors)
-    \item \textbf{Implementation Properties}: Array bounds (MOUNTH macro), integer overflow (fd allocation), reference count safety (CBMC: 113 properties, 0 failures)
+    \item \textbf{Implementation Properties}: Full-mode verification of actual \texttt{pgrpcpy()} C source at production configuration (MNTHASH=32): namespace copy isolation, modification independence, array bounds, error path safety (CBMC: 3,310 properties, 0 failures). Quick-mode CI harnesses: array bounds, integer overflow, reference counting (CBMC: 113 properties, 0 failures)
 \end{enumerate}
 
 \vspace{0.3em}
@@ -1326,9 +1326,41 @@ emu host layer.
 CBMC verifies properties of actual C source code extracted from the kernel.
 Three quick-mode harnesses (CI, $\sim$1 min) check array bounds (MOUNTH hash macro,
 58 properties), integer overflow (fd allocation, 10 properties), and reference
-counting (45 properties): 113 total properties, 0 failures. Full-mode harnesses
-verify the complete \texttt{pgrpcpy()} implementation with \texttt{MNTHASH=32}
-(production configuration), \texttt{--unwind 34}, and \texttt{--object-bits 11}.
+counting (45 properties): 113 total properties, 0 failures.
+
+Four full-mode harnesses verify the complete \texttt{pgrpcpy()} implementation
+including \texttt{newpgrp()}, \texttt{newmount()}, and \texttt{pgrpinsert()} ---
+actual C source from \texttt{pgrp.c}, not re-implementations --- at the production
+configuration (\texttt{MNTHASH=32}, \texttt{--unwind 34}, \texttt{--object-bits 11}):
+
+\begin{center}
+\small
+\begin{tabular}{p{3.8cm}rl}
+\textbf{Harness} & \textbf{Properties} & \textbf{Result} \\
+\hline
+Basic isolation & 908 & PASS \\
+Modification independence & 908 & PASS \\
+MNTHASH bounds & 841 & PASS \\
+Error path safety & 653 & PASS \\
+\hline
+\textbf{Total} & \textbf{3,310} & \textbf{4/4 PASS} \\
+\end{tabular}
+\end{center}
+
+The \texttt{harness\_basic\_isolation} verifies that \texttt{pgrpcpy()} produces
+independent mount tables: the child's \texttt{Mhead} is a distinct object (deep copy),
+mounted channels are shared with incremented reference counts, and \texttt{slash}/\texttt{dot}
+are cloned. The \texttt{harness\_modification\_independence} verifies that post-copy
+mounts to the parent's mount table do not affect the child --- the implementation-level
+analogue of the TLA+ Namespace Isolation Theorem. The \texttt{harness\_pgrpcpy\_error}
+verifies that when \texttt{pgrpcpy()} fails mid-copy (e.g., allocation failure), the
+source namespace is unmodified, the write lock is released, and no stale readers remain.
+
+All runs include \texttt{--unwinding-assertions}, confirming that the unwind depth of 34
+fully covers all program loops --- the bounded verification is therefore sound within
+CBMC's framework. The \texttt{--slice-formula} flag was critical for tractability:
+without it, CBMC stalled at 77+ minutes for \texttt{MNTHASH=4}; with slicing, the
+production \texttt{MNTHASH=32} configuration completes in under one second.
 
 \subsubsection{Scope and Limitations}
 
@@ -1354,10 +1386,14 @@ and that \texttt{exportfs} root boundaries cannot be escaped (SPIN).
 
 \textbf{Verification gap:} The TLA+ and SPIN models abstract the C implementation;
 we verify that the models satisfy isolation properties, not that the C code perfectly
-implements the models. CBMC partially closes this gap by verifying properties on actual
-C source. The multi-tool approach---abstract specification, concurrent protocol
-verification, and implementation-level bounded model checking---provides complementary
-coverage: each tool catches different classes of bugs.
+implements the models. CBMC substantially closes this gap: the full-mode harnesses
+verify the actual \texttt{pgrpcpy()}, \texttt{newpgrp()}, \texttt{newmount()}, and
+\texttt{pgrpinsert()} implementations at the production \texttt{MNTHASH=32}
+configuration with 3,310 properties and sound unwinding assertions. The key properties
+--- copy isolation and modification independence --- are verified on the same C source
+that compiles into the kernel. The multi-tool approach---abstract specification,
+concurrent protocol verification, and implementation-level bounded model checking---provides
+complementary coverage: each tool catches different classes of bugs.
 
 \subsubsection{Connecting Verification to Security Claims}
 
@@ -1372,7 +1408,8 @@ Our security claims rest on the following argument structure:
     \textit{(Verified by TLA+ and SPIN models.)}
     \item \textbf{Lemma (Fork Isolation)}: After \texttt{pgrpcpy()}, modifications to
     parent namespace do not affect child namespace.
-    \textit{(Verified by TLA+, SPIN, and CBMC on C source.)}
+    \textit{(Verified by TLA+, SPIN, and CBMC on actual kernel C source: 3,310
+    properties at production MNTHASH=32 with sound unwinding assertions.)}
     \item \textbf{Assumption (Correct Construction)}: The orchestrator mounts exactly
     $\mathcal{T}_{min}$ before spawning the agent.
     \item \textbf{Conclusion}: Agent cannot resolve paths to tools outside
