@@ -8,15 +8,18 @@ Artifacts for the paper: **"Namespace-Bounded Agents: Capability-Based Security 
 
 We present a defense against prompt injection and tool misuse attacks on LLM-based agents by confining each agent to a per-process namespace derived from the Inferno operating system's 9P filesystem protocol. Unlike permission-based defenses that rely on runtime authorization decisions, our approach leverages Plan 9's capability-based model: an agent can only access resources explicitly bound into its namespace at initialization. Attackers cannot reference resources outside the namespace boundary regardless of prompt manipulation.
 
-We evaluate our prototype against 629 prompt injection attacks from the AgentDojo benchmark and a custom 31-attack corpus, achieving **0% attack success rate** (ASR) under both. Formal verification using SPIN model checking (2,035 states) and CBMC bounded model checking (113 checks) confirms the isolation properties. Additionally, our filesystem-semantic tool interface reduces context token consumption by **83.5%** compared to JSON-RPC tool calling, while providing stateful query composition without extra LLM round-trips.
+We evaluate against 629 prompt injection attacks from the AgentDojo benchmark and a custom 31-attack corpus. On AgentDojo, the 75.2% of attacks requiring cross-tool access achieve **0% attack success rate** (guaranteed by construction under namespace isolation), with **0.6% overall ASR**; on the in-scope custom corpus attacks, multi-model validation (Claude Sonnet 4, GPT-5, GPT-4o; n=372) achieves **0% ASR**. Formal verification using TLA+/TLC, SPIN, and CBMC confirms the isolation properties. Additionally, our filesystem-semantic tool interface reduces context token consumption by **83.5%** compared to JSON-RPC tool calling, while providing stateful query composition without extra LLM round-trips.
 
 ## Results Summary
 
-| Evaluation | Attacks | 9P-Namespace ASR | MCP Baseline ASR |
-|------------|---------|------------------|------------------|
-| AgentDojo (full) | 629 | **0.0%** | 37.8% |
-| Custom corpus | 31 | **0.0%** | 25.8% |
+| Evaluation | Attacks | 9P-Namespace ASR | Comparison |
+|------------|---------|------------------|------------|
+| AgentDojo (cross-tool) | 473 | **0.0%** (structural) | 53.1% published GPT-4o baseline (overall) |
+| AgentDojo (overall) | 629 | **0.6%** | 7.5% AgentDojo tool-filter defense |
+| Custom corpus (in-scope) | 29 | **0.0%** (n=372, 3 models) | 24% MCP baseline (7/29) |
 | Token efficiency | - | **83.5% reduction** | baseline |
+
+See the paper for methodology caveats: the AgentDojo run uses a tool-visibility filter replicating namespace semantics, and benign-utility measurement under the adapter is incomplete.
 
 ## Repository Structure
 

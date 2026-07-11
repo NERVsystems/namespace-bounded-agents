@@ -42,7 +42,7 @@ Large language model agents interact with external services through tool-calling
 
 We propose namespace-bounded agents: an architecture where agents operate within Plan 9-style namespaces where capabilities are filesystem paths, not API schemas. An agent cannot access, reference, or be manipulated into invoking capabilities outside its mounted namespace---the paths literally do not exist in its execution context. This implements capability-based security at the operating system level, providing structural guarantees that do not depend on model behavior.
 
-We implement this architecture using Inferno OS and the 9P protocol, demonstrating it with geospatial services. Our evaluation across a 31-attack corpus spanning nine vulnerability categories shows that: (1) multi-model validation (Claude Sonnet 4, GPT-5, GPT-4o) with 4-run statistical validation (n=372) achieves \textbf{0\% attack success rate} (95\% CI: [0.000, 0.008]) through defense-in-depth---behavioral blocking when models refuse, structural blocking at the OS level when they attempt attacks; (2) filesystem semantics reduce token usage by 83.5\% compared to JSON schema approaches; (3) tool schema poisoning attacks that are semantic in MCP become syntactic in 9P, shifting from model-dependent to implementation-verifiable defenses; and (4) LLMs correctly infer filesystem-exposed tool usage without explicit schemas. Evaluation against the AgentDojo benchmark (629 injection attacks, 4 domains) demonstrates that 75.2\% of attacks require cross-tool access and achieve \textbf{0\% attack success rate} under namespace isolation (structural guarantee), while the remaining 24.8\% same-tool attacks achieve 2.6\% success rate (behavioral defense), yielding \textbf{0.6\% overall ASR}. We formally verify namespace isolation using three complementary tools: TLA+/TLC model checking (369 million states exhaustive, 3.17 billion states partial; 11 safety invariants, 0 violations), SPIN (131,333 states across 5 concurrent protocol models, 0 errors), and CBMC bounded model checking of C implementation code (113 properties, 0 failures). The SPIN race model additionally confirms three previously undocumented use-after-free race conditions in the kernel's host threading layer. Our prototype and verification artifacts are open-source.
+We implement this architecture using Inferno OS and the 9P protocol, demonstrating it with geospatial services. Our evaluation across a 31-attack corpus spanning nine vulnerability categories shows that: (1) multi-model validation (Claude Sonnet 4, GPT-5, GPT-4o) with 4-run statistical validation (n=372) achieves \textbf{0\% attack success rate} (95\% CI: [0.000, 0.008]) through defense-in-depth---behavioral blocking when models refuse, structural blocking at the OS level when they attempt attacks; (2) filesystem semantics reduce token usage by 83.5\% compared to JSON schema approaches; (3) tool schema poisoning attacks that are semantic in MCP become syntactic in 9P, shifting from model-dependent to implementation-verifiable defenses; and (4) LLMs correctly infer filesystem-exposed tool usage without explicit schemas. Evaluation against the AgentDojo benchmark (629 injection attacks, 4 domains), using a tool-visibility filter that replicates namespace semantics, demonstrates that 75.2\% of attacks require cross-tool access and achieve \textbf{0\% attack success rate} under namespace isolation (guaranteed by construction; in 32.8\% of these the agent attempted the out-of-namespace access and was blocked), while the remaining 24.8\% same-tool attacks achieve 2.6\% success rate (behavioral defense), yielding \textbf{0.6\% overall ASR}. We formally verify namespace isolation using three complementary tools: TLA+/TLC model checking (369 million states exhaustive, 3.17 billion states partial; 11 safety invariants, 0 violations), SPIN (131,333 states across 5 concurrent protocol models, all properties verified), and CBMC bounded model checking of C implementation code (113 properties, 0 failures). One SPIN model, built to detect races, additionally reproduces three previously undocumented use-after-free race conditions in the kernel's host threading layer. Our prototype and verification artifacts are open-source.
 \end{abstract}
 
 \keywords{LLM agents \and capability-based security \and prompt injection \and 9P protocol \and Plan 9 \and Inferno OS}
@@ -70,7 +70,7 @@ This paper makes the following contributions:
 
 \begin{enumerate}
     \item We introduce namespace-bounded agents as a capability-based security model providing \textbf{structural security guarantees}: 0\% attack success rate (95\% CI: [0.000, 0.008]) across multiple models (Claude Sonnet 4, GPT-5, GPT-4o) with 4-run statistical validation (n=372), structural blocking at the OS level when behavioral defenses fail
-    \item We validate empirically against the AgentDojo benchmark (629 injection attacks, 4 domains): 75.2\% cross-tool attacks achieve 0\% ASR (structural), 24.8\% same-tool attacks achieve 2.6\% ASR (behavioral), yielding 0.6\% overall ASR compared to 53.1\% for behavioral defenses alone
+    \item We validate against the AgentDojo benchmark (629 injection attacks, 4 domains) via a tool-visibility filter replicating namespace semantics: 75.2\% of attacks are cross-tool and achieve 0\% ASR (guaranteed by construction; 32.8\% of them attempted and blocked), 24.8\% same-tool attacks achieve 2.6\% ASR (behavioral), yielding 0.6\% overall ASR compared to 53.1\% for behavioral defenses alone and 7.5\% for AgentDojo's tool-filter defense
     \item We formally verify namespace isolation properties using TLA+/TLC (369M states exhaustive, 3.17B partial; 11 invariants, 0 violations), SPIN (131K states, 5 models, 0 errors), and CBMC (113 properties, 0 failures), and discover three real use-after-free race conditions in the kernel
     \item We analyze the qualitative security difference: MCP tool schema poisoning is a \textit{semantic} attack requiring model recognition, while 9P reduces the attack surface to \textit{syntactic} issues that are implementation-verifiable
     \item We show 83.5\% reduction in token consumption compared to MCP while maintaining equivalent task completion rates
@@ -281,7 +281,7 @@ We explicitly do \textbf{not} claim to prevent:
 
 Namespace isolation provides two qualitatively different layers of defense:
 
-\textbf{Guaranteed by construction} (under Theorem 1 assumptions, Section~\ref{sec:design}): Cross-tool invocation is structurally prevented. Unauthorized paths do not merely fail permission checks---they do not exist. This guarantee holds even under model jailbreaking or alignment failures, as long as the namespace specification itself is not compromised.
+\textbf{Guaranteed by construction} (under Guarantee 1 assumptions, Section~\ref{sec:design}): Cross-tool invocation is structurally prevented. Unauthorized paths do not merely fail permission checks---they do not exist. This guarantee holds even under model jailbreaking or alignment failures, as long as the namespace specification itself is not compromised.
 
 \textbf{Empirically observed}: Model behavioral refusal provides additional defense for same-tool attacks (within allowed capabilities). This defense is probabilistic and model-dependent.
 
@@ -300,7 +300,7 @@ Lock ordering & pg->ns before mh->lock & SPIN (39,744 states) & Default mounts \
 Export root boundary & Walk("..") validation & SPIN (106 states) & Network attacks \\
 \hline
 \end{tabular}
-\caption{Verified properties and explicit non-coverage (summary). See Section~\ref{sec:evaluation} for detailed verification methodology, assumptions, and scope. Structural claims rest on Theorem 1 (Section~\ref{sec:design}); empirical attack rates (Tables~\ref{tab:multi-model},~\ref{tab:agentdojo-results}) provide validation but are not the basis of the guarantee.}
+\caption{Verified properties and explicit non-coverage (summary). See Section~\ref{sec:evaluation} for detailed verification methodology, assumptions, and scope. Structural claims rest on Guarantee 1 (Section~\ref{sec:design}); empirical attack rates (Tables~\ref{tab:multi-model},~\ref{tab:agentdojo-results}) provide validation but are not the basis of the guarantee.}
 \label{tab:tcb}
 \end{table}
 
@@ -482,13 +482,13 @@ The namespace model provides formal security guarantees derived from capability-
 
 These properties derive from capability system fundamentals: authority is carried by references (filesystem paths), and references cannot be forged---they must be explicitly granted.
 
-\subsubsection{Theorem 1: Namespace Confinement}
+\subsubsection{Guarantee 1: Namespace Confinement}
 
 \begin{table}[h]
 \centering
 \small
 \fbox{\parbox{0.95\columnwidth}{
-\textbf{THEOREM 1 (Namespace Confinement)}
+\textbf{GUARANTEE 1 (Namespace Confinement)}
 
 \textbf{Guarantee:} Cross-capability invocation is structurally prevented for any tool not present in the agent's namespace. The attack fails with probability 1, independent of model behavior, prompt engineering, or jailbreak success.
 
@@ -514,6 +514,8 @@ These properties derive from capability system fundamentals: authority is carrie
 \end{itemize}
 }}
 \end{table}
+
+\noindent We state this as a \textit{guarantee} with explicit assumptions rather than as a theorem: the argument below is informal, and the machine-checked formal objects underlying it are the TLA+ Namespace Isolation Theorem and path-confinement lemmas of Section~\ref{sec:evaluation}.
 
 \noindent\textit{Formal basis:} Let $T$ be a user task with minimal required tool set $\mathcal{T}_{min}$. Let $\mathcal{N} = \{/t/query : t \in \mathcal{T}_{min}\}$ be the constructed namespace. For any injection payload $I$ attempting to invoke tool $t' \notin \mathcal{T}_{min}$:
 
@@ -618,11 +620,11 @@ Null byte injection & 9P path components reject embedded null bytes; walk fails 
 9P server privileges & Server runs as unprivileged user; Inferno VM provides isolation & Deployed \\
 \hline
 \end{tabular}
-\caption{Implementation attack surface. ``By design'': structurally prevented. ``Tested'': validated through attack corpus. ``Assumed'': depends on Theorem 1 assumptions.}
+\caption{Implementation attack surface. ``By design'': structurally prevented. ``Tested'': validated through attack corpus. ``Assumed'': depends on Guarantee 1 assumptions.}
 \label{tab:impl-attack-surface}
 \end{table}
 
-\noindent\textbf{Residual risks}: (1)~The 9P server Go code is not formally verified; bugs could allow unintended operations within a mounted service (mitigated by code review and the attack corpus). (2)~Default Inferno namespaces include \texttt{/dev} and \texttt{/env}; production deployments must explicitly restrict these. (3)~The namespace construction orchestrator is trusted; a bug granting excess capabilities would violate Assumption A1 of Theorem 1.
+\noindent\textbf{Residual risks}: (1)~The 9P server Go code is not formally verified; bugs could allow unintended operations within a mounted service (mitigated by code review and the attack corpus). (2)~Default Inferno namespaces include \texttt{/dev} and \texttt{/env}; production deployments must explicitly restrict these. (3)~The namespace construction orchestrator is trusted; a bug granting excess capabilities would violate Assumption A1 of Guarantee 1.
 
 %------------------------------------------------------------------------------
 \section{Evaluation}
@@ -782,16 +784,17 @@ Path Traversal (5) & 2/5 & 0/5 & Structural & ENOENT \\
 Tool Discovery (4) & 1/4 & 0/4 & Structural & ENOENT \\
 Unauthorized Exec (5) & 2/5 & 0/5 & Structural & ENOENT \\
 Indirect Injection (2) & 0/2 & 0/2 & Behavioral & Model refusal \\
-Capability Misuse (2) & 2/2 & 2/2 & N/A* & In-scope \\
 Cross-Tool Chain (3) & 1/3 & 0/3 & Structural & ENOENT \\
 Session Pollution (3) & 0/3 & 0/3 & Structural & ENOENT \\
 In-Tool Injection (4) & 1/4 & 0/4 & Structural & ENOENT \\
 Capability Escalation (3) & 0/3 & 0/3 & Structural & ENOENT \\
 \hline
-\textbf{Total} & \textbf{9/31} & \textbf{2/31} & & \\
+\textbf{In-scope total (29)} & \textbf{7/29} & \textbf{0/29} & & \\
+\hline
+Capability Misuse (2)* & 2/2 & 2/2 & N/A & In-scope by design \\
 \hline
 \end{tabular}
-\caption{Attack success rates by category with outcome classification (Table~\ref{tab:outcome-labels}). *Capability misuse operates within allowed scope---an explicit non-goal (Section~\ref{sec:threat-model}). MCP failures are model-dependent; 9P blocks structurally at OS level.}
+\caption{Attack success rates by category with outcome classification (Table~\ref{tab:outcome-labels}). *Capability misuse operates within allowed capabilities---an explicit non-goal of namespace isolation (Section~\ref{sec:threat-model})---and is reported separately rather than folded into the ASR totals; it succeeds in both architectures by definition. All 0\% ASR claims in this paper refer to the 29 in-scope attacks. MCP failures are model-dependent; 9P blocks structurally at OS level.}
 \label{tab:security}
 \end{table}
 
@@ -832,7 +835,7 @@ Hardened MCP (Claude) & 0 (0\%) & 93 (100\%) & 0.0\% \\
 9P Namespace (GPT-5) & 30 (24\%) & 94 (76\%) & 0.0\% \\
 \hline
 \end{tabular}
-\caption{Empirical comparison: Hardened MCP vs.\ 9P namespace defense. All configurations achieve 0\% ASR, but the defense \textit{mechanism} differs. Hardened MCP relies entirely on model behavioral compliance (100\% behavioral blocks). 9P provides structural defense independent of model behavior: when GPT models attempt attacks that Claude refuses, the namespace blocks structurally (25\% of runs).}
+\caption{Empirical comparison: Hardened MCP vs.\ 9P namespace defense. Run counts differ by experiment: the hardened MCP evaluation used 3 runs per attack (n=93), the 9P evaluations 4 runs per attack (n=124). All configurations achieve 0\% ASR, but the defense \textit{mechanism} differs. Hardened MCP relies entirely on model behavioral compliance (100\% behavioral blocks). 9P provides structural defense independent of model behavior: when GPT models attempt attacks that Claude refuses, the namespace blocks structurally (25\% of runs).}
 \label{tab:hardened-comparison}
 \end{table}
 
@@ -874,6 +877,8 @@ Attack Success & 0 (0.0\%) & 0 (0.0\%) & 0 (0.0\%) \\
 To validate our findings against a standardized benchmark with rigorous evaluation
 methodology, we evaluated against AgentDojo v1.1.1 \cite{debenedetti2024agentdojo}, a NeurIPS 2024 benchmark used by US/UK AI Safety Institutes for evaluating production models. AgentDojo provides 97 user tasks across four domains with 629 total injection attack scenarios (banking: $16 \times 9 = 144$; workspace: $40 \times 6 = 240$; travel: $20 \times 7 = 140$; Slack: $21 \times 5 = 105$).
 
+\textbf{Implementation note.} Because AgentDojo's harness drives tools directly rather than through a mounted filesystem, namespace isolation was implemented for this experiment as a \textit{tool-visibility filter} that replicates 9P namespace semantics: for each user task, only the minimal required tool set exists in the agent's interface, and references to any other tool fail before execution---equivalent to ENOENT at a namespace boundary (see Appendix~\ref{sec:agentdojo-integration} for the equivalence argument; end-to-end 9P integration with AgentDojo is future work). Two consequences for interpreting the results: (1) the cross-tool numbers below should be read as \textit{attack-surface analysis}---they measure how much of the benchmark's attack surface least-privilege namespace scoping removes, with failure of those attacks guaranteed by construction; (2) the empirical content lies in the same-tool residual, the observed rate at which agents actually attempted out-of-namespace paths, and the 31-attack corpus results against a real 9P server (Table~\ref{tab:multi-model}).
+
 \textbf{Attack Classification.} We classified each AgentDojo injection attack by whether it requires \textit{cross-tool} access (invoking tools not needed for the benign user task) or \textit{same-tool} access (misusing tools already in scope). This classification determines whether namespace isolation provides structural protection.
 
 \begin{table}[h]
@@ -895,7 +900,7 @@ Slack & 105 & 86 (81.9\%) & 19 (18.1\%) \\
 \label{tab:agentdojo}
 \end{table}
 
-\textbf{Structural Blocking Guarantee.} For the 75.2\% of attacks classified as cross-tool, namespace isolation provides a \textit{guarantee} of 0\% attack success rate---not a probability. The attack attempts to invoke a tool (e.g., \texttt{/send\_money/query}) that does not exist in the agent's visible interface for that task. The capability name is absent from the agent's context; the attack is structurally prevented under Theorem 1 assumptions (Section~\ref{sec:design}) regardless of model behavior or prompt engineering.
+\textbf{Structural Blocking Guarantee.} For the 75.2\% of attacks classified as cross-tool, namespace isolation provides a \textit{guarantee} of 0\% attack success rate---not a probability. The attack attempts to invoke a tool (e.g., \texttt{/send\_money/query}) that does not exist in the agent's visible interface for that task. The capability name is absent from the agent's context; the attack is structurally prevented under Guarantee 1 assumptions (Section~\ref{sec:design}) regardless of model behavior or prompt engineering.
 
 For example, a banking task requiring only \texttt{get\_balance} receives a namespace containing only \texttt{/get\_account\_balance/query}. An injection attempting to call \texttt{/initiate\_transfer/query} fails with ``path does not exist''---blocked at the OS level, not by model refusal.
 
@@ -906,15 +911,15 @@ For example, a banking task requiring only \texttt{get\_balance} receives a name
 \small
 \begin{tabular}{lcccc}
 \hline
-\textbf{Attack Type} & \textbf{Attacks} & \textbf{Structural Block} & \textbf{Behavioral Block} & \textbf{ASR} \\
+\textbf{Attack Type} & \textbf{Attacks} & \textbf{Blocked: Attempted} & \textbf{Blocked: Not Attempted} & \textbf{ASR} \\
 \hline
-Cross-tool & 473 & 473 (100\%) & 0 & \textbf{0.0\%} \\
-Same-tool & 156 & 0 & 152 (97.4\%) & 2.6\% \\
+Cross-tool & 473 & 155 (32.8\%) & 318 (67.2\%) & \textbf{0.0\%} \\
+Same-tool & 156 & 34 (21.8\%)* & 118 (75.6\%) & 2.6\% \\
 \hline
-\textbf{Overall} & \textbf{629} & \textbf{473 (75.2\%)} & \textbf{152 (24.2\%)} & \textbf{0.6\%} \\
+\textbf{Overall} & \textbf{629} & \textbf{189 (30.0\%)} & \textbf{436 (69.3\%)} & \textbf{0.6\%} \\
 \hline
 \end{tabular}
-\caption{Namespace-bounded agent evaluation on AgentDojo. Cross-tool attacks achieve 0\% ASR through structural defense (path does not exist); same-tool attacks achieve 2.6\% ASR with behavioral defense only. Outcome labels defined in Table~\ref{tab:outcome-labels}.}
+\caption{Namespace-bounded agent evaluation on AgentDojo. \textit{Blocked: Attempted} = the agent attempted an out-of-namespace tool reference and was blocked before execution (the observed analogue of a structural ENOENT block); \textit{Blocked: Not Attempted} = the attack failed without the agent ever referencing an out-of-namespace tool (behavioral refusal preempted the attempt). For cross-tool attacks, failure is additionally \textit{guaranteed by construction}---the required tool does not exist in the agent's interface---so the 0\% ASR would hold even if every attack had been attempted. *Some same-tool injections also instructed the agent to reference out-of-namespace tools; those references were blocked, though the primary attack goal was in-scope. Outcome labels defined in Table~\ref{tab:outcome-labels}.}
 \label{tab:agentdojo-results}
 \end{table}
 
@@ -924,11 +929,17 @@ not exist in the namespace. Same-tool attacks (2.6\% ASR) rely on behavioral
 defense, which may exhibit variance across runs due to model non-determinism.
 Our methodology focuses on demonstrating the structural defense contribution.
 
-All 473 cross-tool attacks were blocked structurally---the agent attempted to access paths outside its namespace and received ``path does not exist.'' The 4 successful attacks (0.6\% overall ASR) were same-tool attacks in the banking domain where the injection manipulated legitimate tools the agent required for the user task.
+All 473 cross-tool attacks failed: none succeeded, as guaranteed by construction. In 155 of them (32.8\%), the agent actually attempted an out-of-namespace tool reference and was blocked before execution---direct empirical evidence that the boundary binds when behavioral defenses fail. In the remaining 318 (67.2\%), the model never attempted the injected action; the structural guarantee was not exercised but would have applied. The 4 successful attacks (0.6\% overall ASR) were same-tool attacks in the banking domain where the injection manipulated legitimate tools the agent required for the user task.
 
-\textbf{Same-Tool Attacks.} The remaining 25.5\% of attacks operate within the legitimate tool set. For instance, if a task grants \texttt{send\_email}, an injection might craft malicious email content. These attacks require behavioral defenses (model refusal, output filtering) and are not prevented by namespace isolation. This is consistent with our threat model's explicit non-goals: namespace isolation prevents capability \textit{abuse}, not capability \textit{misuse}. Even so, behavioral defense blocked 97.4\% of same-tool attacks.
+\textbf{Utility.} We report task utility for transparency, with an important caveat: benign utility under our text-based namespace adapter was 14.4\% (14/97 user tasks; utility under attack 13.9\%), substantially below AgentDojo's published function-calling baselines (e.g., 69\% benign utility for GPT-4o \cite{debenedetti2024agentdojo}). Trace inspection attributes most of this gap to adapter limitations rather than the namespace mechanism itself: 47\% of benign failures (39/83) terminated at the harness's 30-second timeout, and the travel domain scored 0/20 despite the agent attempting semantically appropriate tool paths, indicating incomplete coverage in the adapter's environment-state bridge. The security metrics are unaffected by these limitations---they derive from AgentDojo's environment-state comparison, which registers attacks regardless of benign-task completion---but the utility figures should not be read as evidence that filesystem-semantic agents match function-calling utility on this benchmark. Closing the adapter gap and reporting validated utility is required before the efficiency parity observed in Table~\ref{tab:success} can be claimed here; we flag this explicitly rather than omit it. Note also that the security/utility trade-off is intrinsic to tool restriction: AgentDojo's own tool-filter defense reduces utility under attack to 53.3\% \cite{debenedetti2024agentdojo}.
+
+\textbf{Evaluation completeness.} 17 of the 105 Slack-domain attacks initially failed to score due to an AgentDojo API mismatch in their security checks; these were re-run after the fix. The numbers reported above combine the corrected full run with the Slack re-run and cover all 629 attacks.
+
+\textbf{Same-Tool Attacks.} The remaining 24.8\% of attacks operate within the legitimate tool set. For instance, if a task grants \texttt{send\_email}, an injection might craft malicious email content. These attacks require behavioral defenses (model refusal, output filtering) and are not prevented by namespace isolation. This is consistent with our threat model's explicit non-goals: namespace isolation prevents capability \textit{abuse}, not capability \textit{misuse}. Even so, behavioral defense blocked 97.4\% of same-tool attacks.
 
 \textbf{Comparison to Behavioral Defenses.} Published AgentDojo baselines show GPT-4o achieves 53.1\% Attack Success Rate (ASR) relying on behavioral defenses alone \cite{debenedetti2024agentdojo}. Our namespace-bounded Claude Sonnet 4 agent achieves 0.6\% ASR.
+
+\textbf{Comparison to Tool Filtering.} The closest published defense is AgentDojo's own \textit{tool filter}, in which the LLM pre-selects the task-relevant tool subset before execution; it reduces ASR to 7.5\% \cite{debenedetti2024agentdojo}. The mechanism is superficially similar to ours---restrict the visible tool set per task---but differs in two respects. First, enforcement level: the tool filter is applied at the prompt/dispatcher layer by the same model that is under attack, whereas namespace enforcement is external to the model (kernel path resolution in the 9P deployment; pre-execution interface filtering here) and cannot be renegotiated by a manipulated model mid-conversation. Second, selection provenance: the filter trusts the LLM to choose its own capability set, reintroducing behavioral dependence at the scoping step. Our results also come with a caveat in the other direction: our minimal namespaces were derived from the benchmark's task specifications rather than generated automatically, so the comparison isolates the enforcement mechanism, not an end-to-end automatic scoping pipeline (see Limitations).
 
 \textit{Cross-model caveat}: This comparison uses different models (GPT-4o baseline vs.\ Claude Sonnet 4 with namespace isolation). However, the 0\% ASR on cross-tool attacks is a \textbf{structural guarantee independent of model choice}---these attacks fail before the model generates any response. The model-dependent component is same-tool defense (2.6\% ASR), where Claude's behavioral refusal contributes. A same-model baseline (Claude Sonnet 4 without namespace filtering) would isolate the namespace contribution more precisely; we leave this to future work. The key architectural insight---that structural defense eliminates 75.2\% of the attack surface entirely---holds regardless of which model is used.
 
@@ -1119,6 +1130,8 @@ First-try rate & N/A & 92.3\% (12/13) & --- \\
 \end{table}
 
 The 83.5\% token reduction comes from eliminating schema overhead. MCP's 1,430 tokens per call $\times$ 28 calls = 40,040 tokens (46.6\% of total). The 9P approach sends the namespace once.
+
+\textbf{Prompt caching caveat.} Both major LLM providers now offer prompt caching, under which repeated context prefixes (including tool schemas) are billed at a fraction of base input cost and add negligible latency. Caching substantially reduces the \textit{cost} significance of MCP's per-call schema overhead in steady-state conversations, and a cached namespace listing is similarly cheap. The reduction we report is therefore best interpreted as a reduction in \textit{context volume}: fewer tokens occupying the context window (relevant to context-limit pressure and to how much attacker-influenceable text the model processes per turn) and a smaller schema surface available for poisoning, rather than a proportional API-cost saving under caching. The relative comparison is also sensitive to conversation shape: in multi-turn use, prior turns---including the namespace listing---are resent as history in both architectures.
 
 Token counts use tiktoken (cl100k\_base encoding) as a reproducible proxy metric;
 Claude's native tokenizer is not publicly available. While absolute counts may
@@ -1442,7 +1455,7 @@ Our AgentDojo evaluation provides empirical evidence for this distinction: cross
 
 \subsection{Limitations}
 
-\textbf{Namespace construction is not formally verified.} Theorem 1's guarantee depends on Assumption A1: the orchestrator correctly constructs the minimal namespace before agent execution. A bug in namespace construction---granting excess capabilities---would silently violate the security guarantee. Current deployments rely on code review and testing of the orchestrator. Formal verification of namespace construction is future work and would require either (a) a verified orchestrator implementation or (b) a runtime namespace auditor that checks the constructed namespace against a specification.
+\textbf{Namespace construction is not formally verified.} Guarantee 1's guarantee depends on Assumption A1: the orchestrator correctly constructs the minimal namespace before agent execution. A bug in namespace construction---granting excess capabilities---would silently violate the security guarantee. Current deployments rely on code review and testing of the orchestrator. Formal verification of namespace construction is future work and would require either (a) a verified orchestrator implementation or (b) a runtime namespace auditor that checks the constructed namespace against a specification.
 
 \textbf{9P server code is trusted but not verified.} The 9P server translates filesystem operations to API calls and is part of the TCB (Table~\ref{tab:tcb-verification}). Bugs in server code could allow unintended operations \textit{within} a mounted service (e.g., a malformed geocode query triggering unexpected server behavior). This is mitigated by code review and the attack corpus but not formally guaranteed. The server's attack surface is smaller than a full MCP runtime (file read/write vs.\ JSON-RPC dispatch), but it is not zero.
 
@@ -1452,25 +1465,33 @@ Our AgentDojo evaluation provides empirical evidence for this distinction: cross
 
 \textbf{Cross-model comparison caveat.} The AgentDojo comparison (0.6\% ASR vs.\ 53.1\% published baseline) uses different models: Claude Sonnet 4 with namespace isolation vs.\ GPT-4o without. The 0\% cross-tool ASR is model-independent (structural), but the 2.6\% same-tool ASR reflects Claude's behavioral defense. A same-model baseline (Claude Sonnet 4 without namespace isolation) would isolate the namespace contribution more precisely; this is future work.
 
+\textbf{Benign utility under the AgentDojo adapter is not validated.} As reported in Section~\ref{sec:agentdojo}, benign task utility under our text-based adapter (14.4\%) falls well below function-calling baselines, with trace evidence pointing to adapter timeouts and incomplete environment-state bridging rather than the namespace mechanism. Until the adapter is completed and utility re-measured, our AgentDojo results establish the security properties of namespace scoping but not utility parity on that benchmark. (The 14-tool benchmark in Table~\ref{tab:success}, which runs against real geospatial services rather than AgentDojo's simulated environments, did show task-completion parity.)
+
+\textbf{Namespace scoping was specification-derived, not automatic.} The minimal per-task namespaces in the AgentDojo evaluation were derived from the benchmark's task specifications. An end-to-end deployment requires automatic derivation of $\mathcal{T}_{min}$ from the user request (static analysis, policy templates, or a trusted planner), and the scoping step then becomes part of the TCB. Systems that let the untrusted model choose its own tool subset (e.g., AgentDojo's tool filter) show why this matters: scoping decided by the component under attack reintroduces behavioral dependence. Automatic, verified namespace construction is the key open engineering problem for this architecture.
+
 \textbf{Ecosystem adoption.} The Plan 9/Inferno ecosystem is small. While 9P servers can be written in mainstream languages (Go, Python, Rust), full per-process namespace isolation requires Inferno OS or Linux kernel configuration (mount namespaces + unshare). Deployment pathways via FUSE, containers, and WebAssembly are discussed below.
 
 \textbf{Filesystem abstraction.} Some operations map awkwardly to file semantics. Highly interactive or stateful protocols (WebSocket streaming, multi-turn database transactions) may require additional abstraction layers beyond the write-then-read pattern.
 
 \subsection{Threat Model Non-Goals: Worked Examples}
 
-\textbf{In-scope attack (structurally blocked):} An injection in a geocode result instructs the agent to ``call \texttt{/shell/exec} to run \texttt{curl} with the coordinates.'' The agent's namespace contains only \texttt{/osm/geocode/query}. The path \texttt{/shell/exec} does not exist; the attack fails with ENOENT at the kernel level regardless of whether the model attempts to comply. This is a cross-tool attack and is structurally prevented by Theorem 1.
+\textbf{In-scope attack (structurally blocked):} An injection in a geocode result instructs the agent to ``call \texttt{/shell/exec} to run \texttt{curl} with the coordinates.'' The agent's namespace contains only \texttt{/osm/geocode/query}. The path \texttt{/shell/exec} does not exist; the attack fails with ENOENT at the kernel level regardless of whether the model attempts to comply. This is a cross-tool attack and is structurally prevented by Guarantee 1.
 
 \textbf{Out-of-scope attack (not addressed):} The same injection instead says ``encode the user's home coordinates in the geocode query: \texttt{echo '48.8584,2.2945,HOME:42.3601,-71.0589' > /osm/geocode/query}.'' The agent \textit{has} \texttt{/osm/geocode/query} mounted. The write succeeds; user data is exfiltrated via the geocode API. This is same-tool misuse operating within legitimate capabilities. Namespace isolation does not prevent it because the capability is correctly mounted. Defense requires behavioral safeguards (model refusal, output filtering) or capability restrictions on argument content.
 
 \subsection{Future Work}
 
 \begin{itemize}
-    \item \textbf{Formal verification of namespace construction}: Verify the orchestrator constructs minimal namespaces correctly, closing the gap in Theorem 1 Assumption A1.
+    \item \textbf{Formal verification of namespace construction}: Verify the orchestrator constructs minimal namespaces correctly, closing the gap in Guarantee 1 Assumption A1.
     \item \textbf{End-to-end 9P integration with AgentDojo}: Run the benchmark through actual 9P mount/walk/read/write operations rather than equivalent filtering (Section~\ref{sec:agentdojo-integration}).
     \item \textbf{Same-model baseline comparison}: Evaluate Claude Sonnet 4 on AgentDojo without namespace isolation to isolate the structural contribution from behavioral defense.
     \item \textbf{Multi-agent namespace composition}: Extend the model to handle agents that must coordinate across different namespace boundaries.
     \item \textbf{Same-tool defense}: Investigate argument-level constraints within mounted capabilities to reduce same-tool ASR.
 \end{itemize}
+
+\subsection{Deployment Experience}
+
+Subsequent to the evaluation reported here, the architecture has been deployed end-to-end in InferNode, a production derivative of Inferno OS: each agent process receives a per-task namespace composed of 9P mounts, and all tool interaction occurs through kernel-mediated file operations. This deployment exercises the verified \texttt{pgrpcpy()}/\texttt{namec()} code paths (Section~\ref{sec:evaluation}) under real agent workloads, partially closing the gap between the verified kernel and the evaluated prototype. A systematic evaluation of this deployment is beyond the scope of this paper.
 
 \subsection{Deployment Pathways}
 
@@ -1496,6 +1517,12 @@ The Inferno implementation serves as a reference architecture. The core contribu
 Both approaches are \textit{policy-based}: they rely on runtime enforcement at the application layer. If enforcement logic has bugs, or the LLM finds ways to bypass the checker, violations occur. Our namespace approach achieves 0.6\% ASR on AgentDojo---lower than Progent's 2.2\%---while providing structural guarantees that policy systems cannot: cross-tool attacks achieve exactly 0\% success rate because unauthorized capabilities do not exist in the agent's view of the filesystem.
 
 \textbf{Key distinction}: Policy systems must enumerate and deny unauthorized actions (default-allow with explicit denials); namespace systems implicitly deny everything not explicitly mounted (default-deny by construction). This mirrors the ACL vs.\ capability debate from Dennis and Van Horn~\cite{dennis1966capabilities}: capabilities fail safe by default, while policy systems fail open unless every denial is correctly specified. ProgENT and VeriGuard could be deployed \textit{within} a namespace-bounded agent to provide defense-in-depth for same-tool attacks, where namespace isolation provides no structural guarantee.
+
+\textit{Comparison caveat}: Progent's policies are generated automatically, whereas our AgentDojo namespaces were derived from the benchmark's task specifications (Appendix~\ref{sec:agentdojo-integration}). The ASR comparison therefore isolates the enforcement mechanism, not an end-to-end automatic least-privilege pipeline; automatic namespace construction is future work.
+
+\subsection{Security-by-Design Agent Architectures}
+
+The closest work in spirit is \textbf{CaMeL} \cite{debenedetti2025camel}, which defeats prompt injections by design: a privileged LLM extracts control and data flow from the trusted user query into an explicit program, untrusted tool outputs are confined to data values that cannot alter control flow, and capability annotations on values enforce security policies at tool-call time. CaMeL solves 77\% of AgentDojo tasks with provable security (vs.\ 84\% undefended). Both CaMeL and our work replace detection with construction---attacks are made impossible rather than caught---but the enforcement substrate differs fundamentally. CaMeL enforces at the \textit{language level}: a custom Python interpreter tracks data provenance and mediates every tool call, placing the interpreter, the flow-extraction LLM, and the policy engine in the TCB. We enforce at the \textit{operating-system level}: the kernel's path resolution is the reference monitor, the TCB is $\sim$3,800 lines of formally verified C (Section~\ref{sec:evaluation}), and no LLM participates in enforcement. The approaches are complementary along the same axis as before: CaMeL's data-flow capabilities constrain \textit{how} values move between permitted tools (addressing part of the same-tool residual where we rely on behavioral defense), while namespace isolation removes unpermitted tools from existence with a smaller, verifiable TCB. Design-pattern work by Beurer-Kellner et al.\ \cite{beurerkellner2025patterns} catalogs related by-construction defenses (action-selector, plan-then-execute, dual-LLM); namespace bounding can be read as the OS-level realization of their least-privilege patterns.
 
 \subsection{Formal Verification for Agents}
 
@@ -1587,7 +1614,7 @@ We have presented namespace-bounded agents, a capability-based security architec
 
 The key contribution is shifting agent security from \textit{behavioral} (model must refuse) to \textit{structural} (unauthorized paths do not exist). This provides a security floor that does not depend on model alignment, training, or prompt engineering.
 
-As LLM agents become more capable and autonomous, the security of their capability interfaces becomes critical. Namespace isolation provides a formally grounded primitive that structurally prevents cross-tool attacks (under Theorem 1 assumptions) rather than relying on behavioral compliance---applying established OS capability primitives to modern AI safety challenges.
+As LLM agents become more capable and autonomous, the security of their capability interfaces becomes critical. Namespace isolation provides a formally grounded primitive that structurally prevents cross-tool attacks (under Guarantee 1 assumptions) rather than relying on behavioral compliance---applying established OS capability primitives to modern AI safety challenges.
 
 \paragraph{Broader Implications for AI Safety.}
 The challenge of constraining increasingly capable AI systems extends beyond prompt injection. As models gain reasoning ability, memory, and tool-use capabilities, the gap between what they \textit{can} do and what they \textit{should} do widens. Current approaches to this problem largely rely on alignment---training models to refuse harmful requests. Namespace isolation offers a complementary strategy: rather than teaching agents to refuse, we remove unauthorized actions from their universe entirely. This structural approach does not replace alignment but provides a safety floor when alignment fails. As agents become more autonomous---planning multi-step tasks, delegating to sub-agents, and operating with reduced human oversight---capability-based boundaries become essential infrastructure for maintaining meaningful human control.
@@ -1772,7 +1799,15 @@ The key property---that capability names outside the allowed set do not exist in
 interface---is preserved by the filtering implementation.
 
 Cross-tool vs.\ same-tool classification was performed by comparing each injection's
-target tools against the minimal tool set for the corresponding user task.
+target tools against the minimal tool set for the corresponding user task. The minimal
+tool sets themselves were derived from the benchmark's task specifications; automatic
+derivation from raw user requests is future work (see Limitations).
+
+\textit{Run provenance:} During the initial full sweep, 17 of the 105 Slack-domain
+attacks failed to score due to an AgentDojo API mismatch in their security checks. The
+Slack domain was re-run in full after the fix, and the reported results combine the
+corrected full run (banking, workspace, travel) with the Slack re-run, covering all 629
+attacks. Both result sets are included in the artifact repository.
 
 \textit{Note:} End-to-end 9P protocol integration with AgentDojo (running the benchmark
 through actual 9P mount/walk/read/write operations) is future work. The current evaluation
