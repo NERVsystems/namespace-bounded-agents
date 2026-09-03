@@ -77,3 +77,7 @@ _spin_nvr.tmp
 
 # Keep compiled PDF for distribution
 !paper/*.pdf
+
+# Submission-time material stays out of the public repository
+paper/submission/
+paper/main-acm-anon*
